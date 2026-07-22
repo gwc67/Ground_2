@@ -29,15 +29,17 @@
 
 /* ============== 帧号定义 ============== */
 
-#define RADAR_POS                  0x01
-#define RADAR_SPEED                0x02
-#define RADAR_YAW                  0x04
-#define PWM                        0x10
-#define BATT_CURR_HEIGHT_PROCESS   0x11
-#define CMD_VEL                    0x12
-#define VEL_FU                     0x13
-#define REPORT                     0x14
-#define GS_FRAME_WAYPOINT          0x16
+#define RADAR_POS                   0x01
+#define RADAR_SPEED                 0x02
+#define RADAR_YAW                   0x04
+#define PWM                         0x10
+#define BATT_CURR_HEIGHT_PROCESS    0x11
+#define CMD_VEL                     0x12
+#define VEL_FU                      0x13
+#define REPORT                      0x14
+#define GS_FRAME_WAYPOINT           0x16
+#define GROUND_REQUEST_PATROL       0x18
+#define GROUND_REQUEST_RETURN       0x19
 /* ============== 数据结构 ============== */
 
 static struct Animal_Report_Data_t s_animal_report_st;
@@ -221,6 +223,15 @@ void vGround_DT_Data_Receive_Anl_Ano(uint8_t *pucdata, uint8_t uclen)
         delivery_add_b(&temp_st);
     }
     break;
+    case GROUND_REQUEST_PATROL: {
+        update_flag_set_v(UPDATE_FLAG_REQUEST_PATROL_em);
+    }
+    break;
+    case GROUND_REQUEST_RETURN: {
+        update_flag_set_v(UPDATE_FLAG_REQUEST_RETURN_em);
+    }
+    break;
+    
     /* -------- 命令帧（地面站需回 ACK 响应） -------- */
     case 0xE0:
         handle_cmd_frame(payload, check_sum1, check_sum2);

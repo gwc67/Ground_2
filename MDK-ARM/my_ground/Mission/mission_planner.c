@@ -25,6 +25,7 @@
 #include <stdio.h>
 #include "ano.h"
 #include "touch_uart.h"
+#include "update.h"
 #define COM_DEBUG  1
 #define CELL_SIZE  50   /* 网格边长 (cm)：world = grid * CELL_SIZE */
 
@@ -40,20 +41,8 @@ static struct Point_index_t s_no_fly_zones[3];
 static uint8_t s_start_x = 0;
 static uint8_t s_start_y = 0;
 
-/* ── 已发送航点相位锁存（0xFF = 从未发送） ── */
-static uint8_t s_last_sent_phase = 0xFF;
 
-/* ── 双路线缓存
- *
- * patrol/return_screen：压缩网格坐标（FlightPath）
- *   → 供 screen 层通过 getter 获取，用于屏幕预览
- * patrol/return_fc：完整世界坐标（Point_t[]）
- *   → 发给 FC 执行
- *
- * 两者同源：都从 plan_path() / plan_return_path() 派生
- */
-
-static struct Point_t    s_patrol_to_fc_pst[200];;                             //int16_t 世界坐标格式
+static struct Point_t    s_patrol_to_fc_pst[200];;                            
 static struct FlightPath s_partrol_compress_st;
 
 static struct Point_t    s_return_to_fc_pst[200];
@@ -154,14 +143,6 @@ bool mission_handle_request_route(void)
     return true;
 }
 
-
-
-void mission_planner_init(void)
-{
-    s_last_sent_phase = 0xFF;
-}
-DRIVER_INIT(mission_planner_init);
-
 /*
  * mission_planner_tick - 根据 FC 相位下发航点
  *
@@ -172,42 +153,19 @@ DRIVER_INIT(mission_planner_init);
 //采用发送状态量， 发送后赋值一个状态量
 void mission_planner_tick(void)
 {
-	uint8_t cur_phase;
-
-	/* 屏幕未启动巡逻任务，不处理 */
-	if (!screen_begin_fly_b())
-		return;
-
-	cur_phase = mission_get_fc_phase();
-
-	/* 同一相位已发送过，跳过 */
-	if (cur_phase == s_last_sent_phase)
-		return;
-
-	switch (cur_phase) {
-	case FC_PHASE_WAITING_PATROL:
-		ground_send_patrol_waypoints_v(s_patrol_to_fc_pst,
+	if (update_flag_consume_uc(UPDATE_FLAG_REQUEST_PATROL_em))
+    {
+        ground_send_patrol_waypoints_v(s_patrol_to_fc_pst,
 					       s_partrol_compress_st.count);
 		screen_set_ui_mode(UI_MODE_PATROL);
-		s_last_sent_phase = cur_phase;
-#if COM_DEBUG
-		uart_printf_v(pstbase_screen_uart, 0,
-			      "[MSN] patrol waypoints sent\r\n");
-#endif
-		break;
-	case FC_PHASE_WAITING_RETURN:
-		ground_send_return_waypoints_v(s_return_to_fc_pst,
+    }
+    
+    else if (update_flag_consume_uc(UPDATE_FLAG_REQUEST_RETURN_em))
+    {
+        ground_send_return_waypoints_v(s_return_to_fc_pst,
 					       s_return_compress_st.count);
 		screen_set_ui_mode(UI_MODE_PREVIEW);
-		s_last_sent_phase = cur_phase;
-#if COM_DEBUG
-		uart_printf_v(pstbase_screen_uart, 0,
-			      "[MSN] return waypoints sent\r\n");
-#endif
-		break;
-	default:
-		break;
-	}
+    }
 }
 
 
