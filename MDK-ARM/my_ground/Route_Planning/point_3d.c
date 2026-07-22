@@ -5,36 +5,70 @@
 
 #define TARGET_QUEUE_CAPACITY 64
 
-static stRingBufTdf s_target_fifo_st;
-static uint8_t s_target_buf[TARGET_QUEUE_CAPACITY * sizeof(struct Point_3D_t)];
+
+struct point_fifo_t
+{
+    struct point_3d_base base;
+    stRingBufTdf fifo_st;
+};
+
+
+
+static struct point_fifo_t s_patrol_fifo_st;
+static uint8_t s_patrol_buf[TARGET_QUEUE_CAPACITY * sizeof(struct Point_3D_t)];
+
+static struct point_fifo_t s_return_fifo_st;
+static uint8_t s_return_buf[TARGET_QUEUE_CAPACITY * sizeof(struct Point_3D_t)];
+
+struct point_3d_base* g_partrol_point_3d_pst;
+struct point_3d_base* g_return_point_3d_pst;
+
+static struct point_3d_base* s_point_fifo_base_init(struct point_fifo_t* fifo_pst,const char* name)
+{
+    fifo_pst->base.name = name;
+    return &(fifo_pst->base);
+}
+
 
 static void s_point_3d_init_v(void)
 {
-    vRingBufItemInit(&s_target_fifo_st,
+    vRingBufItemInit(&s_patrol_fifo_st.fifo_st,
                      TARGET_QUEUE_CAPACITY * sizeof(struct Point_3D_t),
                      sizeof(struct Point_3D_t),
-                     s_target_buf);
+                     s_patrol_buf);
+    g_partrol_point_3d_pst = s_point_fifo_base_init(&s_patrol_fifo_st,"patrol");
+
+    vRingBufItemInit(&s_return_fifo_st.fifo_st,
+                     TARGET_QUEUE_CAPACITY * sizeof(struct Point_3D_t),
+                     sizeof(struct Point_3D_t),
+                     s_return_buf);
+    g_return_point_3d_pst = s_point_fifo_base_init(&s_return_fifo_st,"return");
+    
 }
 DRIVER_INIT(s_point_3d_init_v);
 
-bool point_3d_is_empty_b(void)
+bool point_3d_is_empty_b(struct point_3d_base* base)
 {
-    return ucRingBufIsEmpty(&s_target_fifo_st);
+    struct point_fifo_t* me = container_of(base,struct point_fifo_t,base);
+    return ucRingBufIsEmpty(&me->fifo_st);
 }
 
-void point_3d_clear_b(void)
+void point_3d_clear_b(struct point_3d_base* base)
 {
-    ucRingBufClear(&s_target_fifo_st);
+    struct point_fifo_t* me = container_of(base,struct point_fifo_t,base);
+    ucRingBufClear(&me->fifo_st);
 }
 
-bool point_3d_add_b(const struct Point_3D_t *pst)
+bool point_3d_add_b(struct point_3d_base* base,const struct Point_3D_t *point_pst)
 {
-    return (ucRingBufWriteItem(&s_target_fifo_st, pst) == 0);
+    struct point_fifo_t* me = container_of(base,struct point_fifo_t,base);
+    return (ucRingBufWriteItem(&me->fifo_st, point_pst) == 0);
 }
 
-void point_3d_take_t(struct Point_3D_t* point_pst)
+void point_3d_take_t(struct point_3d_base* base,struct Point_3D_t* point_pst)
 {
-    ucRingBufReadItem(&s_target_fifo_st,&point_pst);
+    struct point_fifo_t* me = container_of(base,struct point_fifo_t,base);
+    ucRingBufReadItem(&me->fifo_st,&point_pst);
 }
 
 

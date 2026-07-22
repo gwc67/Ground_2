@@ -44,6 +44,7 @@ typedef unsigned int   u32;
 typedef signed char    s8;
 typedef signed short   s16;
 typedef signed int     s32;
+#define container_of(ptr, type, member) ((type*)((char*)(ptr) - offsetof(type, member)))
 
 /* USER CODE END ET */
 
