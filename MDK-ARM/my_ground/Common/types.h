@@ -25,4 +25,6 @@ struct Point_t {
     int16_t x;
     int16_t y;
 };
+
+
 #endif /* __COMMON_TYPES_H */
