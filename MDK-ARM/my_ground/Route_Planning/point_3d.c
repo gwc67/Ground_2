@@ -32,13 +32,6 @@ bool point_3d_add_b(const struct Point_3D_t *pst)
     return (ucRingBufWriteItem(&s_target_fifo_st, pst) == 0);
 }
 
-struct Point_3D_t target_queue_take_st(void)
-{
-    struct Point_3D_t t = {0};
-    ucRingBufReadItem(&s_target_fifo_st, &t);
-    return t;
-}
-
 void point_3d_take_t(struct Point_3D_t* point_pst)
 {
     ucRingBufReadItem(&s_target_fifo_st,&point_pst);
