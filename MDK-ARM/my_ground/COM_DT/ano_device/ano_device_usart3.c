@@ -91,7 +91,7 @@ void vUsart3_Add_Send_Data_Ano(uint8_t ucFrame_num, uint8_t *pcnt, uint8_t *pucT
 
     case LX_BAT: {
         struct gs_batt_curr_height_process_t snap;
-        gs_batt_curr_height_process_copy(&snap);
+        batt_curr_height_process_copy(&snap);
         pucTxBuffer[(*pcnt)++]  = BYTE0(snap.voltage_100);
         pucTxBuffer[(*pcnt)++]  = BYTE1(snap.voltage_100);
         pucTxBuffer[(*pcnt)++]  = BYTE0(snap.current_100);

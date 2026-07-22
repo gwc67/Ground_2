@@ -31,16 +31,7 @@ void ground_send_animal_report_v(const struct Animal_Report_Data_t *report_st);
  * ===================================================================== */
 
 /* 帧号（与 FC 端定义对应） */
-#define GS_FRAME_RADAR_POS                  0x01
-#define GS_FRAME_RADAR_SPEED                0x02
-#define GS_FRAME_RADAR_YAW                  0x04
-#define GS_FRAME_PWM                        0x10
-#define GS_FRAME_BATT_CURR_HEIGHT_PROCESS   0x11
-#define GS_FRAME_CMD_VEL                    0x12
-#define GS_FRAME_VEL_FU                     0x13
-#define GS_FRAME_REPORT                     0x14
-#define GS_FRAME_WAYPOINT                   0x16
-#define GS_FRAME_WAYPOINT_CLEAR             0x17
+
 
 /* FC 相位枚举（与 FC fly_task_phase_e 严格对应）
  * WAITING_PATROL / WAITING_RETURN 是 FC 的握手机制：
@@ -114,31 +105,15 @@ struct gs_vel_fu_t {
 
 
 
-//看来question2下需要重新定义一个帧，不和这个有冲突
-
-//地面站的动物信息汇报
-
-
-/* setter — 从载荷字节 (pucdata+4 起) 解析并写入存储（纯函数，可独立测试） */
-void gs_radar_pos_set                (const uint8_t *payload);
-void gs_radar_speed_set              (const uint8_t *payload);
-void gs_jn_cam_set                   (const uint8_t *payload);
-void gs_radar_yaw_set                (const uint8_t *payload);
-void gs_pwm_set                      (const uint8_t *payload);
-void gs_batt_curr_height_process_set (const uint8_t *payload);
-void gs_cmd_vel_set                  (const uint8_t *payload);
-void gs_vel_fu_set                   (const uint8_t *payload);
-void gs_animal_report_set            (const uint8_t *payload);
-void gs_fc_status_set                (const uint8_t *payload);
 
 /* copy — 线程安全快照（供其他模块读取） */
-void gs_radar_pos_copy                (struct gs_radar_pos_t *out);
-void gs_radar_speed_copy              (struct gs_radar_speed_t *out);
-void gs_radar_yaw_copy                (struct gs_radar_yaw_t *out);
-void gs_pwm_copy                      (struct gs_pwm_t *out);
-void gs_batt_curr_height_process_copy (struct gs_batt_curr_height_process_t *out);
-void gs_cmd_vel_copy                  (struct gs_cmd_vel_t *out);
-void gs_vel_fu_copy                   (struct gs_vel_fu_t *out);
+void radar_pos_copy                (struct gs_radar_pos_t *out);
+void radar_speed_copy              (struct gs_radar_speed_t *out);
+void radar_yaw_copy                (struct gs_radar_yaw_t *out);
+void pwm_copy                      (struct gs_pwm_t *out);
+void batt_curr_height_process_copy (struct gs_batt_curr_height_process_t *out);
+void cmd_vel_copy                  (struct gs_cmd_vel_t *out);
+void vel_fu_copy                   (struct gs_vel_fu_t *out);
 
 /* ============== 发送侧 — 航点上传接口 ============== */
 
@@ -147,7 +122,6 @@ void gs_vel_fu_copy                   (struct gs_vel_fu_t *out);
 /**
  * @brief 清空飞控航点 FIFO (0xE0/0x01, CMD 帧, 等 ACK)
  */
-void ground_send_waypoint_clear_v(void);
 
 /**
  * @brief 完整任务巡逻航点上传

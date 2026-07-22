@@ -29,7 +29,15 @@
 
 /* ============== 帧号定义 ============== */
 
-
+#define RADAR_POS                  0x01
+#define RADAR_SPEED                0x02
+#define RADAR_YAW                  0x04
+#define PWM                        0x10
+#define BATT_CURR_HEIGHT_PROCESS   0x11
+#define CMD_VEL                    0x12
+#define VEL_FU                     0x13
+#define REPORT                     0x14
+#define GS_FRAME_WAYPOINT          0x16
 /* ============== 数据结构 ============== */
 
 static struct Animal_Report_Data_t s_animal_report_st;
@@ -52,86 +60,38 @@ static struct gs_cmd_vel_t                  s_cmd_vel;
 static struct gs_vel_fu_t                   s_vel_fu;
 
 
-
-/* ============== 接收侧 — setter 纯函数（载荷字节 → 存储） ============== */
-/* payload 指向 pucdata + 4（即紧跟 CMD + LEN 之后的载荷首字节） */
-
-void gs_radar_pos_set(const uint8_t *payload)
-{
-    memcpy(&s_radar_pos, payload, sizeof(s_radar_pos));
-}
-
-void gs_radar_speed_set(const uint8_t *payload)
-{
-    memcpy(&s_radar_speed, payload, sizeof(s_radar_speed));
-}
-
-
-void gs_radar_yaw_set(const uint8_t *payload)
-{
-    memcpy(&s_radar_yaw, payload, sizeof(s_radar_yaw));
-}
-
-void gs_pwm_set(const uint8_t *payload)
-{
-    memcpy(&s_pwm, payload, sizeof(s_pwm));
-}
-
-void gs_batt_curr_height_process_set(const uint8_t *payload)
-{
-    memcpy(&s_batt_curr_height_process, payload, sizeof(s_batt_curr_height_process));
-}
-
-void gs_cmd_vel_set(const uint8_t *payload)
-{
-    memcpy(&s_cmd_vel, payload, sizeof(s_cmd_vel));
-}
-
-void gs_vel_fu_set(const uint8_t *payload)
-{
-    memcpy(&s_vel_fu, payload, sizeof(s_vel_fu));
-}
-
-void gs_fc_clear_flag_success(const uint8_t *payload)
-{
-    /* 飞控回 0x17/0x01 确认 clear 成功。
-     * 批次链式发送由 Add_Send_Data 内部状态机驱动，无需在此触发 WTS。 */
-    (void)payload;
-}
-/* ============== 接收侧 — copy 线程安全快照 ============== */
-
-void gs_radar_pos_copy(struct gs_radar_pos_t *out)
+void radar_pos_copy(struct gs_radar_pos_t *out)
 {
     *out = s_radar_pos;
 }
 
-void gs_radar_speed_copy(struct gs_radar_speed_t *out)
+void radar_speed_copy(struct gs_radar_speed_t *out)
 {
     *out = s_radar_speed;
 }
 
 
-void gs_radar_yaw_copy(struct gs_radar_yaw_t *out)
+void radar_yaw_copy(struct gs_radar_yaw_t *out)
 {
     *out = s_radar_yaw;
 }
 
-void gs_pwm_copy(struct gs_pwm_t *out)
+void pwm_copy(struct gs_pwm_t *out)
 {
     *out = s_pwm;
 }
 
-void gs_batt_curr_height_process_copy(struct gs_batt_curr_height_process_t *out)
+void batt_curr_height_process_copy(struct gs_batt_curr_height_process_t *out)
 {
     *out = s_batt_curr_height_process;
 }
 
-void gs_cmd_vel_copy(struct gs_cmd_vel_t *out)
+void cmd_vel_copy(struct gs_cmd_vel_t *out)
 {
     *out = s_cmd_vel;
 }
 
-void gs_vel_fu_copy(struct gs_vel_fu_t *out)
+void vel_fu_copy(struct gs_vel_fu_t *out)
 {
     *out = s_vel_fu;
 }
@@ -185,9 +145,8 @@ static void handle_ack_frame(const uint8_t *payload)
 void vGround_init_Ano(void)
 {
     vano_sendID_set(pstAnobase_Ground, 0x00, 0);
-    vano_sendID_set(pstAnobase_Ground, GS_FRAME_REPORT, 0);  /* 外部触发发送 */
+    vano_sendID_set(pstAnobase_Ground, REPORT, 0);  /* 外部触发发送 */
     vano_sendID_set(pstAnobase_Ground, GS_FRAME_WAYPOINT, 0);       /* 外部触发发送 */
-    vano_sendID_set(pstAnobase_Ground, GS_FRAME_WAYPOINT_CLEAR, 0); /* 外部触发发送 */
 }
 DRIVER_INIT(vGround_init_Ano);
 
@@ -227,28 +186,56 @@ void vGround_DT_Data_Receive_Anl_Ano(uint8_t *pucdata, uint8_t uclen)
     switch (cmd)
     {
     /* -------- 数据帧（飞控 → 地面站，被动接收不回 ACK） -------- */
-    case GS_FRAME_RADAR_POS:                gs_radar_pos_set(payload);                break;
-    case GS_FRAME_RADAR_SPEED:              gs_radar_speed_set(payload);              break;
-    case GS_FRAME_RADAR_YAW:                gs_radar_yaw_set(payload);                break;
-    case GS_FRAME_PWM:                      gs_pwm_set(payload);                      break;
-    case GS_FRAME_BATT_CURR_HEIGHT_PROCESS: gs_batt_curr_height_process_set(payload); break;
-    case GS_FRAME_CMD_VEL:                  gs_cmd_vel_set(payload);                  break;
-    case GS_FRAME_VEL_FU:                   gs_vel_fu_set(payload);                   break;
-    case GS_FRAME_WAYPOINT_CLEAR:           gs_fc_clear_flag_success(payload);        break;
-    case GS_FRAME_REPORT:
-    {
+    case RADAR_POS: {
+        memcpy(&s_radar_pos, payload, sizeof(s_radar_pos));
+    }
+    break;
+    case RADAR_SPEED: {
+        memcpy(&s_radar_speed, payload, sizeof(s_radar_speed));
+    }
+    break;
+    case RADAR_YAW: {
+        memcpy(&s_radar_yaw, payload, sizeof(s_radar_yaw));
+    }
+    break;
+    case PWM: {
+        memcpy(&s_pwm, payload, sizeof(s_pwm));
+    }
+    break;
+    case BATT_CURR_HEIGHT_PROCESS: {
+        memcpy(&s_batt_curr_height_process, payload, sizeof(s_batt_curr_height_process));
+    }
+    break;
+
+    case CMD_VEL: {
+        memcpy(&s_cmd_vel, payload, sizeof(s_cmd_vel));
+    }
+    break;
+    case VEL_FU: {
+        memcpy(&s_vel_fu, payload, sizeof(s_vel_fu));
+    }
+    break;
+    case REPORT: {
         struct delivery_t temp_st;
-        memcpy(&temp_st,payload,sizeof(temp_st));
+        memcpy(&temp_st, payload, sizeof(temp_st));
         delivery_add_b(&temp_st);
     }
     break;
     /* -------- 命令帧（地面站需回 ACK 响应） -------- */
-    case 0xE0: handle_cmd_frame(payload, check_sum1, check_sum2);       break;
-    case 0xE1: handle_par_read_frame(payload, check_sum1, check_sum2);  break;
-    case 0xE2: handle_par_write_frame(check_sum1, check_sum2);          break;
+    case 0xE0:
+        handle_cmd_frame(payload, check_sum1, check_sum2);
+        break;
+    case 0xE1:
+        handle_par_read_frame(payload, check_sum1, check_sum2);
+        break;
+    case 0xE2:
+        handle_par_write_frame(check_sum1, check_sum2);
+        break;
 
     /* -------- 确认帧 -------- */
-    case 0x00: handle_ack_frame(payload);                               break;
+    case 0x00:
+        handle_ack_frame(payload);
+        break;
     default:
         break;
     }
@@ -274,7 +261,7 @@ void vGround_Add_Send_Data_Ano(uint8_t ucFrame_num, uint8_t *pcnt, uint8_t *pucT
     break;
 
 
-    case GS_FRAME_REPORT:
+    case REPORT:
     {
         memcpy(pucTxBuffer + *(pcnt), &s_animal_report_st, sizeof(s_animal_report_st));
         *pcnt += sizeof(s_animal_report_st);
@@ -300,12 +287,6 @@ void vGround_Add_Send_Data_Ano(uint8_t ucFrame_num, uint8_t *pcnt, uint8_t *pucT
         s_waypoint_batches_left--;
         if (s_waypoint_batches_left > 0)
             vano_WTS_set(pstAnobase_Ground, GS_FRAME_WAYPOINT, 1);
-    }
-    break;
-
-    case GS_FRAME_WAYPOINT_CLEAR:
-    {   
-        pucTxBuffer[(*pcnt)++] = 0x01;
     }
     break;
 
@@ -336,9 +317,8 @@ void vGround_Data_Exchange_Task_Ano(void)
     vano_ck_back_check(pstAnobase_Ground);
     vano_check_to_send(pstAnobase_Ground, 0x00);
     vano_check_to_send(pstAnobase_Ground, 0xe0);
-    vano_check_to_send(pstAnobase_Ground, GS_FRAME_REPORT);
+    vano_check_to_send(pstAnobase_Ground, REPORT);
     vano_check_to_send(pstAnobase_Ground, GS_FRAME_WAYPOINT);
-    vano_check_to_send(pstAnobase_Ground, GS_FRAME_WAYPOINT_CLEAR);
 }
 
 
@@ -346,15 +326,10 @@ void vGround_Data_Exchange_Task_Ano(void)
 void ground_send_animal_report_v(const struct Animal_Report_Data_t *report_st)
 {
     s_animal_report_st = *report_st;
-    vano_WTS_set(pstAnobase_Ground, GS_FRAME_REPORT, 1);
+    vano_WTS_set(pstAnobase_Ground, REPORT, 1);
 }
 
 /* ============== 航点上传 — 数据帧 0x17 (clear) + 0x16 (航点) ============== */
-
-void ground_send_waypoint_clear_v(void)
-{
-    vano_WTS_set(pstAnobase_Ground, GS_FRAME_WAYPOINT_CLEAR, 1);
-}
 
 /**
  * @brief 内部：缓存航点 → 发 clear (0x17) → 任务循环逐批发送 0x16
@@ -367,10 +342,7 @@ static void waypoint_send_prepare(const struct Point_t *pts, uint8_t cnt)
     memcpy(s_waypoint_tx_buf, pts, cnt * sizeof(struct Point_t));
     s_waypoint_total = cnt;
     s_waypoint_batch_off = 0;
-    s_waypoint_batches_left = (cnt + MAX_WAYPOINTS_PER_FRAME - 1) / MAX_WAYPOINTS_PER_FRAME;
 
-    /* 发 clear (0x17) + 直接触发第一批 0x16 */
-    ground_send_waypoint_clear_v();
     vano_WTS_set(pstAnobase_Ground, GS_FRAME_WAYPOINT, 1);
 }
 
