@@ -8,8 +8,8 @@
 
 
 #include "main.h"
-
-void map_set_v(struct Point_3D_t* in);
+#include "point_3d.h"
+void map_set_v(struct Point_3D_t* in) ;
 
 
 #endif

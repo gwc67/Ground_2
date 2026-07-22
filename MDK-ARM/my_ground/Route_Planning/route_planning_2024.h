@@ -3,6 +3,8 @@
 
 
 #include "main.h"
-
+#include "point_3d.h"
+void route_generate_patrol(const struct Point_3D_t* target_pst); 
+void route_generate_return(const struct Point_3D_t* target_pst);
 
 #endif
