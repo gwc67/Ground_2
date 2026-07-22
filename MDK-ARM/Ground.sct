@@ -1,0 +1,26 @@
+; *************************************************************
+; *** Scatter-Loading Description File for STM32F407        ***
+; *** 含 driver_registry 自动初始化段 (.dvr.a/b1/b2/b3/z)  ***
+; *************************************************************
+
+LR_IROM1 0x08000000 0x00080000  {    ; load region size_region (512KB Flash)
+  ER_IROM1 0x08000000 0x00080000  {  ; load address = execution address
+   *.o (RESET, +First)
+   *(InRoot$$Sections)
+   .ANY (+RO)
+   ; === driver_registry 自动初始化段 ===
+   ; 按 ASCII 字母序排列：.dvr.a < .dvr.b1 < .dvr.b2 < .dvr.b3 < .dvr.z
+   ; __driver_init_begin 在 .dvr.a（段首标记），__driver_init_end 在 .dvr.z（段尾标记）
+   *(.dvr.a)
+   *(.dvr.b1)
+   *(.dvr.b2)
+   *(.dvr.b3)
+   *(.dvr.z)
+  }
+  RW_IRAM1 0x20000000 0x0001C000  {  ; RW data (112KB SRAM)
+   .ANY (+RW +ZI)
+  }
+  RW_IRAM2 0x2001C000 0x00004000  {  ; 16KB SRAM
+   .ANY (+RW +ZI)
+  }
+}

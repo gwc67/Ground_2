@@ -1,0 +1,240 @@
+================================================================================
+my_ground 代码与头文件解读（全量版，覆盖整个 my_ground）
+================================================================================
+
+【读这份之前】
+  · 如果你的工作是"把地面站数据发给陶晶驰串口屏显示"（UI 已在屏端写好）——
+    先读同目录下的《陶晶驰屏数据展示工作指南.txt》，那份只聚焦你的活：
+    取数据(gs_xxx_copy) → 格式化 → 发屏(USART2)，并附陶晶驰指令速记。
+  · 本份是"全量解读"，覆盖协议底层/路径规划/任务状态机/屏幕等所有模块，
+    信息量大，适合需要全局视角或要理解"数据怎么收进来"时翻阅。两份互补。
+  · 重要：本目录各 CLAUDE.md 的描述严重滞后于代码（见第五节对照表），
+    判别事实一律以 .c/.h 代码为准。
+
+================================================================================
+一、这个项目是什么
+================================================================================
+
+STM32F407 地面站固件。用 C 语言虚函数表（vtable）做面向对象分层，管理三条串口
+通路，并在其中一条上跑 ANO 协议与飞控交换数据，另外自己跑网格路径规划算法。
+
+一句话核心：两条独立的 vtable 链 —— UART 链管字节搬运，ANO 链管协议语义，
+两者只在两个函数处咬合。
+
+
+================================================================================
+二、分层架构（看这张图就够了）
+================================================================================
+
+┌─────────────────────────────────────────────────────────────────────┐
+│  App 层    Ano_Scheduler.c (FreeRTOS 任务)                          │
+│            → driver_init_all() → 周期调 DrvUartDataCheck             │
+│            → 10ms 调 mission_planner_tick()                          │
+└──────────────────────────────────────────────────────────────────────┘
+                │ 调用                          │ 调用
+┌──────────────────────┐        ┌──────────────────────────────────┐
+│ touch_uart.c         │        │ mission_planner.c                │
+│ (USART2 命令+发屏)   │←──────→│ (任务状态机 + 路径缓存)          │
+│ 解析行→mission       │ 单向   │   ↑ Route_Planning.c 算法        │
+│ 发屏数据(你的活)     │ 依赖   └──────────────────────────────────┘
+└──────────────────────┘
+                │ uc_uart_read_ucbyte / uart_transmit
+                ↓                                          ↑
+┌──────────────────────────────────────┐ ┌──────────────────────────┐
+│ ANO vtable 链 (COM_DT/)              │ │ UART vtable 链 (Drv_Uart/)│
+│  ano_base.h   stAnoOps               │ │  uart_base.h   stUartOps  │
+│  ano_base.c   vano_* 分发            │ │  uart_base.c   uart_*分发 │
+│  ano_ture.c   stAnoDevice 子类       │ │  uart_true.c   stUartRing │
+│  ano_device_*.c 通路差异化           │ │  boart_uart_init.c 实例化 │
+│  ano_board_init.c 实例化             │ └──────────────────────────┘
+└──────────────────────────────────────┘
+                │                                          │
+   咬合点1: vano_check_data ──→ uc_uart_read_ucbyte (ANO 从 UART 读)
+   咬合点2: Send_Buff       ──→ uart_transmit           (ANO 往 UART 写)
+
+最关键的一句话：ANO 层通过 uc_uart_read_ucbyte() 主动从 UART 的 RingBuffer
+轮询读字节喂状态机；发送时通过 uart_transmit() 把帧塞进 UART 的 TX 队列。
+UART 层完全不知道有 ANO 协议存在。抓住这两个函数，整条数据流就通了。
+
+
+================================================================================
+三、各模块一句话职责 + 关键文件
+================================================================================
+
+| 模块            | 职责                                          | 必读文件                       |
+|-----------------|-----------------------------------------------|--------------------------------|
+| Common          | 共享类型：Point_index_t(网格)、FlightPath(航 | types.h                        |
+|                 | 线)、Point_t(世界坐标 cm)                     |                                |
+| Auto_Init       | Linux initcall 风格自动初始化。DRIVER_INIT_1/ | driver_registry.h              |
+|                 | 2/3 按段名 b1<b2<b3 排序                      |                                |
+| Drv_Uart        | UART vtable：收发字节 + RingBuffer + TX 队列  | uart_base.h→uart_true.c→       |
+|                 | 非阻塞                                        | boart_uart_init.c→Drv_Uart.c   |
+| COM_DT          | ANO vtable：7级状态机收帧、帧组装、CK重传、   | ano_base.h→ano_ture.c→         |
+|                 | CMD分发；收到的数据存进gs_xxx静态变量供屏取用| ano_device_ground.c            |
+| Route_Planning  | 9×7 网格弓字形扫描 + 障碍绕行 + 路径压缩 +   | route_planning.c               |
+|                 | 返航。纯算法无依赖                            |                                |
+| Mission         | 任务状态机：缓存禁飞区+双路线，按 FC 相位    | mission_planner.c               |
+|                 | (WAITING_PATROL/RETURN) 下发航点             |                                |
+| touch_uart      | ★屏数据展示层：USART2 收屏命令 + 把数据发屏  | touch_uart.c                   |
+|                 | (PYTHON_DEBUG 切换 Python/真实串口屏两套)     |                                |
+| My_FC_Ctrl      | FreeRTOS 任务入口：driver_init_all + 周期tick | Ano_Scheduler.c                |
+
+
+================================================================================
+四、启动与数据流（时序）
+================================================================================
+
+main() → MX_USART1/2/3_Init() (HAL) → osKernelStart()
+  → APPTask_LX 任务:
+     driver_init_all()  ← 按段名顺序执行所有 DRIVER_INIT:
+        .dvr.b1: uart_board_init    (建3个UART实例+ops绑定+开接收)
+        .dvr.b2: ano_board_init     (建2个ANO设备+unique绑定)
+        .dvr.b3: vGround_init_Ano    (设帧频率)
+                 vUsart3_init_Ano
+                 mission_planner_init
+
+  循环(任务通知驱动):
+        DrvUartDataCheck():
+          vano_check_data(ground)  ← 收飞控数据→ANO状态机→存进gs_xxx变量
+          vano_check_data(usart3)
+          screen_uart_check_*()    ← 收屏命令→行组装→dispatch
+        每 10ms: mission_planner_tick()  ← 查FC相位→下发航点
+
+  ★ 对"做屏展示"的你：飞控数据进到 gs_xxx 变量这一步是别人写好的，
+    你只要在某个周期里 gs_xxx_copy 取出来 + uart_printf_v 发屏。
+
+  接收中断(硬件): HAL_UARTEx_RxEventCallback
+                  → uart_fifo_add() → 字节进RingBuffer(任务级再消费)
+  发送完成中断: HAL_UART_TxCpltCallback → uart_Ring_tx_complete_isr()
+                  → 出队下一帧续发 (DMA/IT 各一套)
+
+
+================================================================================
+五、为什么各 CLAUDE.md 不能全信 —— 真实原因
+================================================================================
+
+我对比了各目录的 CLAUDE.md 和实际代码，发现文档严重滞后于代码：
+
+| CLAUDE.md 说的                     | 实际代码                                |
+|------------------------------------|------------------------------------------|
+| pstAnobase_Com / pstAnobase_Lx 两路| pstAnobase_Ground / pstAnobase_Usart3    |
+| .dma_buf 段、cache-safe、CleanDCache| F407 普通 SRAM，无 .dma_buf 段          |
+| TX 队列容量 8                       | xQueueCreate(32, ...)                    |
+| pBinary_SemaphoreHandle 信号量、   | 无信号量字段，IT 也是队列非阻塞          |
+| IT 阻塞发送                         |                                          |
+| uartRing_init_dma / uartRing_init_ | 统一 uartRing_init + stUartRingConfig    |
+| it 两个函数                         | 结构                                      |
+| 四路 UART (COM/LX/OF/SBUS)          | 三路 (ground/screen/usart3)              |
+
+建议：把各 CLAUDE.md 当"历史背景和设计意图"看，判别事实时一律以 .c/.h 代码
+为准。那些文档描述的是早期飞控版移植前的架构，代码已经演进了，但文档没跟上。
+
+
+================================================================================
+六、读这种 C-vtable 代码的方法论（核心建议）
+================================================================================
+
+【1. 永远按 "静态结构 → 动态调用" 的顺序读，不要顺着文件读】
+
+每个 vtable 模块按这个四步读，效率最高：
+
+  ① 读 .h 里的结构体定义
+     → 搞清"数据长什么样"(stUartBase/stUartRing/stAnoDevice)
+  ② 读 board_init.c
+     → 看实例怎么装配、ops 指向哪张表(这是"多态"的落点)
+  ③ 读 ops 表(const static)
+     → 看哪个函数挂哪个槽(一张表看完全部行为差异)
+  ④ 读分发函数 + 实现
+     → 分发是薄 wrapper,实现里 container_of 转回子类
+
+【2. 把 container_of 当成"this 指针还原"】
+
+    stUartRing* me = container_of(stBase, stUartRing, stBase);
+
+等价于 C++ 里 this——vtable 函数收到的都是基类指针 stUartBase*，靠这个宏
+拿回子类 stUartRing* 才能访问私有字段。子类结构体第一个成员必须是
+stUartBase stBase（uart_true.h:20），这是 container_of 能工作的前提。
+
+【3. 盯死两个咬合点，别被两层 vtable 绕晕】
+
+无论代码多绕，ANO 和 UART 之间只有两个接口：
+  - uc_uart_read_ucbyte() —— ANO 从 UART 读（ano_ture.c:332）
+  - uart_transmit()       —— ANO 往 UART 写（ano_device_ground.c:313 经 Send_Buff）
+
+其余两层的内部 vtable 各自闭环，互不引用。
+
+【4. TX 队列非阻塞 + ACK 重传，画时序图比读代码快】
+
+  任务级 transmit(): memcpy→入队 → 若空闲则出队→HAL_UART_Transmit_DMA → 置忙
+  TxCplt ISR:        出队→memcpy→再启DMA；队列空则置空闲   (uart_true.c:68-84)
+
+  ANO ACK 重传: wait_ck=1 → 每50ms重发0xe0 → 收0x00匹配则清 → 最多5次
+                                                     (ano_ture.c:266-293)
+
+【5. 看初始化顺序就查段名】
+
+谁先执行？看 DRIVER_INIT_1/2/3 的段名 b1<b2<b3
+（driver_registry.h:23-34）。uart_board_init(b1) 必须早于 ano_board_init(b2)，
+因为 ANO 的 Send_Buff 要用到已建好的 UART 实例。依赖关系藏在段名里。
+
+
+================================================================================
+七、推荐阅读顺序（全量版，照着走）
+================================================================================
+
+第一遍 建骨架(只读.h + board_init):
+    types.h → uart_base.h → uart_true.h → uarts.h → boart_uart_init.c
+          → ano_protocol.h → ano_base.h → ano_ture.h → ano.h → ano_board_init.c
+          → driver_registry.h
+
+第二遍 通数据流(顺着调用):
+    Ano_Scheduler.c → Drv_Uart.c(DrvUartDataCheck) → ano_ture.c(Data_Check_Ano_s)
+                  → uart_true.c(uart_ring_read / uart_Ring_tx_DMA_Queue)
+
+第三遍 读业务:
+    touch_uart.c(dispatch_line/screen_send_path) → mission_planner.c
+                              → route_planning.c(plan_path)
+
+第四遍 按需:
+    ano_device_ground.c(收发帧/数据存取gs_xxx) / ring_buffer.c(底层) / uart_log.c(日志)
+
+
+================================================================================
+八、文件清单（35 个 .c/.h，共约 3296 行）
+================================================================================
+
+my_ground/Auto_Init/driver_registry.c
+my_ground/Auto_Init/driver_registry.h
+my_ground/COM_DT/ano.h
+my_ground/COM_DT/ano_base.c
+my_ground/COM_DT/ano_base.h
+my_ground/COM_DT/ano_board_init.c
+my_ground/COM_DT/ano_device/ano_device_ground.c
+my_ground/COM_DT/ano_device/ano_device_ground.h
+my_ground/COM_DT/ano_device/ano_device_usart3.c
+my_ground/COM_DT/ano_device/ano_device_usart3.h
+my_ground/COM_DT/ano_protocol.h
+my_ground/COM_DT/ano_ture.c
+my_ground/COM_DT/ano_ture.h
+my_ground/COM_DT/SysConfig.h
+my_ground/Common/types.h
+my_ground/Drv_Uart/boart_uart_init.c
+my_ground/Drv_Uart/Drv_Uart.c
+my_ground/Drv_Uart/Drv_Uart.h
+my_ground/Drv_Uart/ring_buffer.c
+my_ground/Drv_Uart/ring_buffer.h
+my_ground/Drv_Uart/uart_base.c
+my_ground/Drv_Uart/uart_base.h
+my_ground/Drv_Uart/uart_log.c
+my_ground/Drv_Uart/uart_log.h
+my_ground/Drv_Uart/uart_true.c
+my_ground/Drv_Uart/uart_true.h
+my_ground/Drv_Uart/uarts.h
+my_ground/Mission/mission_planner.c
+my_ground/Mission/mission_planner.h
+my_ground/My_FC_Ctrl/Ano_Scheduler.c
+my_ground/My_FC_Ctrl/Ano_Scheduler.h
+my_ground/Route_Planning/route_planning.c
+my_ground/Route_Planning/route_planning.h
+my_ground/touch_uart/touch_uart.c
+my_ground/touch_uart/touch_uart.h

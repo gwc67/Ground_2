@@ -1,0 +1,14 @@
+ground\croutine.o: ../Middlewares/Third_Party/FreeRTOS/Source/croutine.c
+ground\croutine.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/FreeRTOS.h
+ground\croutine.o: D:\Downloads\Core\ARM\ARMCC\Bin\..\include\stddef.h
+ground\croutine.o: D:\Downloads\Core\ARM\ARMCC\Bin\..\include\stdint.h
+ground\croutine.o: ../Core/Inc/FreeRTOSConfig.h
+ground\croutine.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/projdefs.h
+ground\croutine.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/portable.h
+ground\croutine.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/deprecated_definitions.h
+ground\croutine.o: ../Middlewares/Third_Party/FreeRTOS/Source/portable/RVDS/ARM_CM4F/portmacro.h
+ground\croutine.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/mpu_wrappers.h
+ground\croutine.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/task.h
+ground\croutine.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/list.h
+ground\croutine.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/croutine.h
+ground\croutine.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/list.h

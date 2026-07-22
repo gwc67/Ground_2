@@ -1,0 +1,39 @@
+{
+    "configurations": [
+        {
+            "name": "Win32",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "${workspaceFolder}/my_ground/Auto_Init",
+                "${workspaceFolder}/my_ground/COM_DT",
+                "${workspaceFolder}/my_ground/COM_DT/ano_device",
+                "${workspaceFolder}/my_ground/Common",
+                "${workspaceFolder}/my_ground/Drv_Uart",
+                "${workspaceFolder}/my_ground/Mission",
+                "${workspaceFolder}/my_ground/My_FC_Ctrl",
+                "${workspaceFolder}/my_ground/Route_Planning",
+                "${workspaceFolder}/my_ground/touch_uart",
+                "../Core/Inc",
+                "../Drivers/STM32F4xx_HAL_Driver/Inc",
+                "../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy",
+                "../Middlewares/Third_Party/FreeRTOS/Source/include",
+                "../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2",
+                "../Middlewares/Third_Party/FreeRTOS/Source/portable/RVDS/ARM_CM4F",
+                "../Drivers/CMSIS/Device/ST/STM32F4xx/Include",
+                "../Drivers/CMSIS/Include"
+            ],
+            "defines": [
+                "_DEBUG",
+                "UNICODE",
+                "_UNICODE",
+                "USE_HAL_DRIVER",
+                "STM32F407xx"
+            ],
+            "compilerPath": "D:\\Mingw64\\bin\\gcc.exe",
+            "cStandard": "c17",
+            "cppStandard": "gnu++17",
+            "intelliSenseMode": "windows-gcc-x64"
+        }
+    ],
+    "version": 4
+}
