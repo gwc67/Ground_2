@@ -26,6 +26,7 @@
 #include "ano.h"
 #include "touch_uart.h"
 #include "update.h"
+#include "route_planning_2024.h"
 #define COM_DEBUG  1
 #define CELL_SIZE  50   /* 网格边长 (cm)：world = grid * CELL_SIZE */
 
@@ -130,16 +131,18 @@ void mission_request_route(void)                                                
 
 bool mission_handle_request_route(void)
 {
-    if (!mission_can_request_route()) {
-#if COM_DEBUG
-        uart_printf_v(pstbase_screen_uart, 0, "[MSN] reject: phase %d\r\n",
-            mission_get_fc_phase());
-#endif
-        return false;
-    }
+//     if (!mission_can_request_route()) {
+// #if COM_DEBUG
+//         uart_printf_v(pstbase_screen_uart, 0, "[MSN] reject: phase %d\r\n",
+//             mission_get_fc_phase());
+// #endif
+//         return false;
+//     }
 
-    //这个就是真正计算路径的函数，它会将
-    mission_request_route();
+//     //这个就是真正计算路径的函数，它会将
+//     mission_request_route();
+    
+    // route_generate_patrol()
     return true;
 }
 

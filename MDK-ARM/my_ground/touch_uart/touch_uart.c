@@ -330,7 +330,7 @@ static void dispatch_line(const char *line)
         line += strlen("zone:");
         parse_zone_command(line);
     } 
-    else if (strncmp(line,"delivery:",9))
+    else if (strncmp(line,"delivery:",9) == 0)
     {
         line += strlen("delivery:");
         parse_delivery_command(line);
@@ -497,7 +497,22 @@ static uint8_t str_to_int16_uc(const char *str, int16_t *array_ps, uint8_t arr_s
 
 static void parse_delivery_command(const char *line)
 {
-    
+
+    uint8_t count_uc = 0;
+    int16_t array_ps[20] = {0};
+    struct Point_3D_t temp_st = {0};
+
+    uint8_t data_num =  str_to_int16_uc(line,array_ps,sizeof(array_ps) / sizeof(array_ps[0]));
+
+
+    temp_st.x_s = array_ps[count_uc++];
+    temp_st.y_s = array_ps[count_uc++];
+    temp_st.z_s = array_ps[count_uc++];
+
+
+#if TOUCH_UART_DEBUG
+    uart_printf_v(pstbase_screen_uart,0,"target_pos:x:%d,y:%d,z:%d\r\n",temp_st.x_s,temp_st.y_s,temp_st.z_s);
+#endif
 }
 
  

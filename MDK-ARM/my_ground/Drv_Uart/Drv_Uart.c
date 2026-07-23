@@ -74,6 +74,7 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
     if (huart == uart_handle_get(pstbase_screen_uart))
     {
         uart_fifo_add(pstbase_screen_uart, Size);
+        uart_receive_enable(pstbase_screen_uart);
     }
     if (huart == uart_handle_get(pstbase_usart3_uart))
     {

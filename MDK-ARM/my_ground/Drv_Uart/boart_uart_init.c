@@ -79,16 +79,24 @@ void uart_board_init(void)
     });
 
     /* USART2 — 串口屏幕：DMA TX + DMA RX 循环 */
-    uartRing_init(&screen_uart, &(stUartRingConfig){
-        .pUartHandle      = &huart2,
-        .pucRxbuffer      = Screen_RxBuffer,
+    // uartRing_init(&screen_uart, &(stUartRingConfig){
+    //     .pUartHandle      = &huart2,
+    //     .pucRxbuffer      = Screen_RxBuffer,
+    //     .usRxbuffer_size  = SCREEN_RXBufferSize,
+    //     .pucRingBuffer    = Screen_RxFIFOBuffer,
+    //     .ulRingBufferLen  = SCREEN_RXFIFOBufferSize,
+    //     .pTxDmabuffer     = Screen_TxBuffer,
+    //     .ucRxIsIT         = 0,    /* DMA 循环接收 */
+    //     .ucTxIsDMA        = 1,    /* DMA 发送（非阻塞队列） */
+    //     .ucRxIsIdle       = 1,
+    // });
+    uart_init_it(&screen_uart,&(stUartRingConfig){
+        .pUartHandle = &huart2,
+        .pucRxbuffer = Screen_RxBuffer,
         .usRxbuffer_size  = SCREEN_RXBufferSize,
         .pucRingBuffer    = Screen_RxFIFOBuffer,
         .ulRingBufferLen  = SCREEN_RXFIFOBufferSize,
         .pTxDmabuffer     = Screen_TxBuffer,
-        .ucRxIsIT         = 0,    /* DMA 循环接收 */
-        .ucTxIsDMA        = 1,    /* DMA 发送（非阻塞队列） */
-        .ucRxIsIdle       = 1,
     });
 
     /* USART3 — 与飞控通信：IT TX + IT RX，ANO 协议 */

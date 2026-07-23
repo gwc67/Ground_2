@@ -43,5 +43,6 @@ typedef struct {
 } stUartRingConfig;
 
 void uartRing_init(stUartRing *me, const stUartRingConfig *cfg);
+void uart_init_it(stUartRing *me, const stUartRingConfig *cfg);
 
 #endif

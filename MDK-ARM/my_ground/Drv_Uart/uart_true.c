@@ -208,29 +208,29 @@ static void uart_Ring_tx_debugger(stUartBase* stBase ,uint8_t *pucData,uint16_t 
     stUartRing* me = container_of(stBase,stUartRing,stBase);
     HAL_UART_Transmit(me->pUartHandle,pucData,usLen,HAL_MAX_DELAY);
 }
-static void uart_ring_add_dma_idle(stUartBase* stBase, uint16_t usLen)
-{
-    stUartRing *me = container_of(stBase, stUartRing, stBase);
-    uint16_t usLastPos = me->usLastRxPos;
+// static void uart_ring_add_dma_idle(stUartBase* stBase, uint16_t usLen)
+// {
+//     stUartRing *me = container_of(stBase, stUartRing, stBase);
+//     uint16_t usLastPos = me->usLastRxPos;
 
-    if (usLen >= usLastPos) {
-        /* 正常：从 usLastPos 到 usLen 是新数据 */
-        for (uint16_t i = usLastPos; i < usLen; i++) {
-            uint16_t pos = i % me->usRxbuffer_size;
-            ucRingBufWrite(&me->stdRingbuffer, me->pucRxbuffer[pos]);
-        }
-    } else {
-        /* DMA 回绕：先写 usLastPos 到末尾，再写 0 到 usLen */
-        for (uint16_t i = usLastPos; i < me->usRxbuffer_size; i++) {
-            ucRingBufWrite(&me->stdRingbuffer, me->pucRxbuffer[i]);
-        }
-        for (uint16_t i = 0; i < usLen; i++) {
-            ucRingBufWrite(&me->stdRingbuffer, me->pucRxbuffer[i]);
-        }
-    }
+//     if (usLen >= usLastPos) {
+//         /* 正常：从 usLastPos 到 usLen 是新数据 */
+//         for (uint16_t i = usLastPos; i < usLen; i++) {
+//             uint16_t pos = i % me->usRxbuffer_size;
+//             ucRingBufWrite(&me->stdRingbuffer, me->pucRxbuffer[pos]);
+//         }
+//     } else {
+//         /* DMA 回绕：先写 usLastPos 到末尾，再写 0 到 usLen */
+//         for (uint16_t i = usLastPos; i < me->usRxbuffer_size; i++) {
+//             ucRingBufWrite(&me->stdRingbuffer, me->pucRxbuffer[i]);
+//         }
+//         for (uint16_t i = 0; i < usLen; i++) {
+//             ucRingBufWrite(&me->stdRingbuffer, me->pucRxbuffer[i]);
+//         }
+//     }
 
-    me->usLastRxPos = usLen;
-}
+//     me->usLastRxPos = usLen;
+// }
 /* 4 张 ops 表 —— 不同串口挂不同表，决定收发用 DMA 还是 IT。
  * 选哪张表在 uartRing_init 里根据 cfg->ucRxIsIT / ucTxIsDMA 决定。 */
 
@@ -279,10 +279,10 @@ const static stUartOps usart_ring_dma_rx_only_ops = {
     .uart_Ring_tx_complete_isr = uart_Ring_tx_complete_isr_IT,
 };
 
-const static stUartOps usart_ring_dma_idle_ops = {
+const static stUartOps usart_ring_tx_dma_rx_it = {
     .transmit = uart_Ring_tx_DMA_Queue,
-    .receive = uart_Ring_rx_DMA,
-    .fifoadd = uart_ring_add_dma_idle,
+    .receive = uart_Ring_rx_IT,
+    .fifoadd = uart_ring_add,
     .uart_handle_get = uart_handle_get,
     .read_ucbyte = uart_ring_read,
     .transmit_debug = uart_Ring_tx_debugger,
@@ -308,7 +308,7 @@ void uartRing_init(stUartRing *me, const stUartRingConfig *cfg)
 
         // 根据配置选择 ops 表
         if (cfg->ucRxIsIdle)
-            me->stBase.ops = &usart_ring_dma_idle_ops;  // DMA 空闲中断模式（screen_uart 专用）
+            me->stBase.ops = &usart_ring_tx_dma_rx_it;  // DMA 空闲中断模式（screen_uart 专用）
         else if (cfg->ucTxIsDMA)
             me->stBase.ops = cfg->ucRxIsIT ? &usart_ring_dma_it_ops : &usart_ring_dma_ops;
         else
@@ -321,3 +321,21 @@ void uartRing_init(stUartRing *me, const stUartRingConfig *cfg)
     }
 }
     
+void uart_init_it(stUartRing *me, const stUartRingConfig *cfg)
+{
+    me->pUartHandle       = cfg->pUartHandle;
+    me->pucRxbuffer       = cfg->pucRxbuffer;
+    me->usRxbuffer_size   = cfg->usRxbuffer_size;
+
+    vRingBufInit(&me->stdRingbuffer, cfg->ulRingBufferLen, cfg->pucRingBuffer);
+
+
+    me->TxDmabuffer_puc = cfg->pTxDmabuffer;
+    uart_Ring_tx_initQuene(me);
+
+    me->stBase.ops = &usart_ring_tx_dma_rx_it;
+    
+}
+
+
+
