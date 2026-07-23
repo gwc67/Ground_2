@@ -4,7 +4,7 @@
 #include "map/map.h"
 #include "math.h"
 #include "Report/report.h"
-
+#include "map/point_2d.h"
 
 //最好是封装一个映射函数，能够将世界坐标，映射到具体的A，B系里面
 //建议航线规划使用世界坐标，而航点显示，简单使用普通映射系即可
@@ -23,7 +23,7 @@ enum shelf_e{
 
 
 
-#define AISLE_Y_1   -25         //U形转换避障的坐标 偏下面的
+#define AISLE_Y_1   -26         //U形转换避障的坐标 偏下面的
 #define AISLE_Y_2   275         //U形转换避障的坐标，偏上的坐标
 
 #define YAW_FONT        0
@@ -36,26 +36,31 @@ enum shelf_e{
 static enum shelf_e s_identify_shelf_face_em(const struct Point_3D_t* target_pst)
 {
     enum shelf_e id_em = SHELF_A;
-    if (target_pst->yaw_s == YAW_FONT) {
-        id_em = (target_pst->x_s > 100) 
-                        ? SHELF_C 
-                        : SHELF_A;
-    } else if (target_pst->yaw_s == YAW_REAR) {
+    if (ABS(target_pst->yaw_s) > YAW_REAR)
+    {
         // 注意：x>200 对应D面(origin=350)，x<=250 对应B面(origin=150)
-        id_em = (target_pst->x_s > 250) 
-                        ? SHELF_D
-                        : SHELF_B;
+        id_em = (target_pst->x_s > 250) ? SHELF_D : SHELF_B;
+    }
+    else
+    {
+        
+        id_em = (target_pst->x_s > 100) ? SHELF_C : SHELF_A;
     }
     return id_em;
 }
 
 
-static struct Point_3D_t target_cur_st = {0};
+
 void route_generate_patrol(const struct Point_3D_t* target_pst)
 {
 
+    point_3d_clear_b(g_partrol_point_3d_pst);
+    point_3d_clear_b(g_return_point_3d_pst);
+    point_2d_clear_b();
+
     enum shelf_e shelf_em =  s_identify_shelf_face_em(target_pst);  
     
+    struct Point_3D_t target_cur_st = {0};
 
     target_cur_st.yaw_s = target_pst->yaw_s;
     target_cur_st.z_s = target_pst->z_s;
@@ -63,7 +68,7 @@ void route_generate_patrol(const struct Point_3D_t* target_pst)
     if (ABS(target_cur_st.yaw_s) > YAW_REAR)
     {
         point_3d_add_b(g_partrol_point_3d_pst,&target_cur_st);            //先转到指定yaw角
-        map_set_v(&target_cur_st);
+        // map_set_v(&target_cur_st);
     }
     
 
@@ -83,40 +88,31 @@ void route_generate_patrol(const struct Point_3D_t* target_pst)
         point_3d_add_b(g_partrol_point_3d_pst,&target_cur_st);
         map_set_v(&target_cur_st);
 
-        point_3d_add_b(g_partrol_point_3d_pst,target_pst);  // 最终目标点
+        target_cur_st.y_s = target_pst->y_s;
+        point_3d_add_b(g_partrol_point_3d_pst,&target_cur_st);  // 最终目标点
         map_set_v(&target_cur_st);
 
+        
     }
-}
 
-
-//在这里补一个航点就能做到45°降落，当然得看y与z轴得大小，关系否则得提前降落了，现在先不管
-void route_generate_return(const struct Point_3D_t* target_pst)
-{
-    // 返程航点（非D面时才添加）
-
-    enum shelf_e shelf_em =  s_identify_shelf_face_em(target_pst);  
-
-    
-    if (shelf_em != SHELF_D) {
+    if (shelf_em != SHELF_D)
+    {
         target_cur_st.y_s = AISLE_Y_2;
 
-        point_3d_add_b(g_return_point_3d_pst,&target_cur_st);
-        map_set_v(&target_cur_st);
-        
-        target_cur_st.x_s = return_st.x_s;   
-
-        point_3d_add_b(g_return_point_3d_pst,&target_cur_st);
+        point_3d_add_b(g_return_point_3d_pst, &target_cur_st);
         map_set_v(&target_cur_st);
 
+        target_cur_st.x_s = return_st.x_s;
+
+        point_3d_add_b(g_return_point_3d_pst, &target_cur_st);
+        map_set_v(&target_cur_st);
     }
-    
-    //最后添加一个返航终点即可                  //45°降落，我想一下，没关系，我的缓冲区可以获取最后一个长度判断是否是以及最后一个航点，可以实现
+
+    // 最后添加一个返航终点即可                  //45°降落，我想一下，没关系，我的缓冲区可以获取最后一个长度判断是否是以及最后一个航点，可以实现
     target_cur_st.x_s = return_st.x_s;
     target_cur_st.y_s = return_st.y_s;
-    point_3d_add_b(g_return_point_3d_pst,&target_cur_st);
-    map_set_v(&target_cur_st);      
-
+    point_3d_add_b(g_return_point_3d_pst, &target_cur_st);
+    map_set_v(&target_cur_st);
 }
 
 
@@ -136,7 +132,7 @@ bool all_the_route_planning_b(void)
     
     
     route_generate_patrol(&target_st);
-    route_generate_return(&target_st);
+    // route_generate_return(&target_st);
 
     return true;
 

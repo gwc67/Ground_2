@@ -65,13 +65,13 @@ uint8_t mission_get_fc_phase(void)
     return st.process_uc;
 }
 
-static bool mission_can_request_route(void)
-{
-    uint8_t phase = mission_get_fc_phase();
-    return (phase == FC_PHASE_IDLE
-         || phase == FC_PHASE_TAKEOFF_DELAY
-         || phase == FC_PHASE_ALT_HOLD || phase == FC_PHASE_WAITING_PATROL);
-}
+// static bool mission_can_request_route(void)
+// {
+//     uint8_t phase = mission_get_fc_phase();
+//     return (phase == FC_PHASE_IDLE
+//          || phase == FC_PHASE_TAKEOFF_DELAY
+//          || phase == FC_PHASE_ALT_HOLD || phase == FC_PHASE_WAITING_PATROL);
+// }
 
 static bool s_build_grid(uint8_t grid[WIDTH][HEIGHT])
 {
@@ -136,7 +136,7 @@ void mission_request_route(void)                                                
 
 bool mission_handle_request_route(void)
 {
-    if (mission_can_request_route_b()) {
+    if (mission_can_request_route_b() == false) {
 #if TOUCH_UART_DEBUG
         uart_printf_v(pstbase_screen_uart, 0, "can not request route\r\n");
 #endif

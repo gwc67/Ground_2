@@ -143,6 +143,7 @@ static void dispatch_line(const char *line)
     else if (strcmp(line, "request_route") == 0) {
         if (mission_handle_request_route()) {
             s_screen_state_st.request_route_b = true;
+            
             screen_set_ui_mode(UI_MODE_PREVIEW);
         }
     }
@@ -283,6 +284,24 @@ static void parse_delivery_command(const char *line)
 
  static void screen_send_path(const char *prefix, const struct Point_map_t *fp)
 {
+#if TOUCH_UART_DEBUG
+    if (fp->count_uc == 0)
+    {
+        uart_printf_v(pstbase_screen_uart, 0, "mode=%s\r\n", prefix);
+        return;
+    }
+    uart_printf_v(pstbase_screen_uart, 0, "clear\r\rn");
+
+    uart_printf_v(pstbase_screen_uart,0,"%s_start\r\n",prefix);
+
+    for (uint8_t i = 0; i < fp->count_uc; i++)
+    {
+        uart_printf_v(pstbase_screen_uart, 0, "(%d,%d)\r\n",
+                      fp->point_mat_pst[i].x_c, fp->point_mat_pst[i].y_c);
+    }
+    uart_printf_v(pstbase_screen_uart,0,"%s_end\r\n",prefix);
+
+#else
     if (fp->count_uc == 0) {
         uart_printf_v(pstbase_screen_uart, 0, "t2.txt=%s\xff\xff\xff", prefix);
         return;
@@ -310,6 +329,7 @@ static void parse_delivery_command(const char *line)
     }
     uart_printf_v(pstbase_screen_uart, 0, "click t2,1\xff\xff\xff");
     uart_printf_v(pstbase_screen_uart,0,"click t2,0\xff\xff\xff");
+#endif
 }
 
 
@@ -324,8 +344,8 @@ void screen_set_ui_mode(ui_mode_t mode)
         // 预览模式：同时显示巡查 + 返航两条路线
         point_map_take_t(&path_st);
         screen_send_path("巡查模式",&path_st);      // 发巡查路径
-        point_map_take_t(&return_st);
-        screen_send_path("返航模式",&return_st);  // 发返航路径
+        // point_map_take_t(&return_st);
+        // screen_send_path("返航模式",&return_st);  // 发返航路径
     }
     break;
     case UI_MODE_PATROL:

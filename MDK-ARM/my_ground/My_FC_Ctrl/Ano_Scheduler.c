@@ -23,8 +23,8 @@ void APPTask_LX(void *argument)
 {
   driver_init_all();
 
-  struct delivery_t a = { .x_s = 120,.y_s = 60,.z_s = 80,.type_uc = 0,.position_uc = 0};
-  struct delivery_t b = { .x_s = 180,.y_s = 70,.z_s = 80,.type_uc = 1,.position_uc = 1};
+  struct delivery_t a = { .x_s = 150,.y_s = 75,.z_s = 140,.type_uc = 2,.position_uc = 2,.yaw_s = 180};
+  struct delivery_t b = { .x_s = 300,.y_s = 75,.z_s = 140,.type_uc = 1,.position_uc = 1,.yaw_s = 180};
 
   delivery_add_b(&a);
   delivery_add_b(&b);

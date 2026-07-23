@@ -28,7 +28,7 @@ bool point_2d_add_b(const struct Point_2D_t *pst)
     }
 }
 
-void point_map_take_t(struct Point_map_t* point_map_pst)
+void    point_map_take_t(struct Point_map_t* point_map_pst)
 {
      *point_map_pst = s_point_map_st ;
 }

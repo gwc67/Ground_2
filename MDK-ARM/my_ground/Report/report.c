@@ -6,21 +6,18 @@
 
 //这东西我认为没有必要上环形缓冲区，它要保证一直都在
 
-static struct delivery_t s_all_the_delivery_pst[DELIVERY_MAX_NUM] = {
-    [0] = {.type_uc = 1,.x_s = 150,.y_s = 75,.z_s = 140,.yaw_s = 180},  //B面
-    [1] = {.type_uc = 2,.x_s = 300,.y_s = 75,.z_s = 140,.yaw_s = 180},  //D 面 
-};
+static struct delivery_t s_all_the_delivery_pst[DELIVERY_MAX_NUM];
 static struct delivery_t s_delivery_special_st;
 static uint8_t s_delivery_index_uc;                              //货物索引号，每添加一个就自增，考虑接受端，想要查询货物可以怎么做呢？应该根据货物的id号进行查询，也就是id_uc，这个表面标签,这个变量名只负责自增添加；
 
 
-void delivery_init_v(void)
-{
-    memset(s_all_the_delivery_pst, 0, sizeof(s_all_the_delivery_pst));
-    s_delivery_index_uc = 0;
-}
+// void delivery_init_v(void)
+// {
+    // memset(s_all_the_delivery_pst, 0, sizeof(s_all_the_delivery_pst));
+    // s_delivery_index_uc = 0;
+// }
 
-DRIVER_INIT(delivery_init_v);
+// DRIVER_INIT(delivery_init_v);
 
 //这个可以进行重复添加，可以啊
 
