@@ -33,7 +33,7 @@ void map_set_v(struct Point_3D_t* in)
                           : (y_shifted - GRID_STEP + 1) / GRID_STEP);
 
 
-    point_2d_add_b(&point_2d_st);
+    point_2d_patrol_add_b(&point_2d_st);
 
 }
 

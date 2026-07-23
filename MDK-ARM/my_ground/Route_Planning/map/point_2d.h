@@ -24,8 +24,13 @@ struct Point_map_t
 
 void point_2d_clear_b(void);
 
-bool point_2d_add_b(const struct Point_2D_t *pst);
+bool point_2d_patrol_add_b(const struct Point_2D_t *pst);
 
-void point_map_take_t(struct Point_map_t* point_map_pst); 
+void point_2d_patrol_take_v(struct Point_map_t* point_map_pst); 
+
+bool point_2d_return_add_b(const struct Point_2D_t *pst);
+
+void point_2d_return_take_v(struct Point_map_t* point_map_pst);
+
 
 #endif
