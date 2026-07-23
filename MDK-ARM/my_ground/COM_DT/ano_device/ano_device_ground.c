@@ -40,6 +40,10 @@
 #define GS_FRAME_WAYPOINT           0x16
 #define GROUND_REQUEST_PATROL       0x18
 #define GROUND_REQUEST_RETURN       0x19
+
+#define GROUND_SPECIAL_DELIVRY      0x20     //准备查找的指定货物
+
+
 /* ============== 数据结构 ============== */
 
 static struct Animal_Report_Data_t s_animal_report_st;
@@ -218,7 +222,7 @@ void vGround_DT_Data_Receive_Anl_Ano(uint8_t *pucdata, uint8_t uclen)
     }
     break;
     case REPORT: {
-        struct delivery_t temp_st;
+        struct delivery_t temp_st = {0};
         memcpy(&temp_st, payload, sizeof(temp_st));
         delivery_add_b(&temp_st);
     }
@@ -231,6 +235,13 @@ void vGround_DT_Data_Receive_Anl_Ano(uint8_t *pucdata, uint8_t uclen)
         update_flag_set_v(UPDATE_FLAG_REQUEST_RETURN_em);
     }
     break;
+    case GROUND_SPECIAL_DELIVRY:
+    {
+        struct delivery_t temp_st = {0};
+        memcpy(&temp_st, payload, sizeof(temp_st));
+        delivery_set_special(&temp_st);
+        update_flag_set_v(UPDATE_FLAG_DELVIERY_SPECIAL_em);         //更新新货物
+    }
     
     /* -------- 命令帧（地面站需回 ACK 响应） -------- */
     case 0xE0:

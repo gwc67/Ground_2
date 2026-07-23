@@ -30,7 +30,7 @@
 #include "point_3d.h"
 #include "Ano_Scheduler.h"
 #include "Report/report.h"
-
+#include "update.h"
 
 #define LINE_BUF_SIZE  128
 #define POINTS_PER_LINE  10
@@ -69,6 +69,15 @@ void screen_send_delivery(void)
         uart_printf_v(pstbase_screen_uart,0,"result.data1.insert(\"%d\")\xff\xff\xff",delivery_st.x_s);
         uart_printf_v(pstbase_screen_uart,0,"result.data2.insert(\"%d\")\xff\xff\xff",delivery_st.y_s);
         uart_printf_v(pstbase_screen_uart,0,"result.data3.insert(\"%d\")\xff\xff\xff",delivery_st.z_s);
+    }
+    
+    if (update_flag_consume_uc(UPDATE_FLAG_DELVIERY_SPECIAL_em))
+    {
+        struct delivery_t delivery_st = {0};
+        delivery_copy_special(&delivery_st);
+
+        uart_printf_v(pstbase_screen_uart,0,"result.data4.insert(\"%d\")\xff\xff\xff",delivery_st.type_uc);         //货物编号显示
+
     }
     
     

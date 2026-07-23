@@ -20,6 +20,7 @@ enum update_flag_field_e
     UPDATE_FLAG_REPORT_em,
     UPDATE_FLAG_REQUEST_PATROL_em,
     UPDATE_FLAG_REQUEST_RETURN_em,
+    UPDATE_FLAG_DELVIERY_SPECIAL_em,
 };
 
 enum update_state_e
