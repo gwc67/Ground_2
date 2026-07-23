@@ -37,7 +37,7 @@
 #define LINE_BUF_SIZE               128
 #define POINTS_PER_LINE             10
 
-#define CLEAR_POINT                 0x20     
+#define CLEAR_POINT_TX                 0x20     
  
 
 
@@ -86,13 +86,15 @@ void screen_send_delivery(void)
 #endif
     }
     
-    if (update_flag_consume_uc(UPDATE_FLAG_DELVIERY_SPECIAL_em))
+    if (update_flag_consume_uc(UPDATE_FLAG_DELVIERY_SPECIAL_em))            //类似刚刚手动切换成type_一样，这是只是使用无人机切换罢了
     {
         struct delivery_t delivery_st = {0};
         delivery_copy_special(&delivery_st);
-
+#if TOUCH_UART_DEBUG
+        uart_printf_v(pstbase_screen_uart,0,"target_type_uc:%d",delivery_st.type_uc);
+#else   
         uart_printf_v(pstbase_screen_uart,0,"result.data4.insert(\"%d\")\xff\xff\xff",delivery_st.type_uc);         //货物编号显示
-
+#endif
     }
     
     
@@ -175,7 +177,7 @@ static void dispatch_line(const char *line)
             uart_printf_v(pstbase_screen_uart, 0, "start_flytask success !\r\n");
 #endif
             update_flag_set_v(UPDATE_FLAG_BEGIN_FLY_TASK_em);
-            vano_WTS_set(pstAnobase_Ground,CLEAR_POINT,1);
+            vano_WTS_set(pstAnobase_Ground,CLEAR_POINT_TX,1);
         }
         else
         {

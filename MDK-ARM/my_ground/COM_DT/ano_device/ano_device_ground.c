@@ -43,12 +43,12 @@
 #define POINT_PATROL                0x16
 #define POINT_RETURN                0x17
 
-#define GROUND_REQUEST_PATROL       0x18
-#define GROUND_REQUEST_RETURN       0x19
+#define GROUND_REQUEST_PATROL_RX       0x18
+#define GROUND_REQUEST_RETURN_RX       0x19
 
-#define CLEAR_POINT                 0x20     
-#define GROUND_SPECIAL_DELIVRY      0x21     //准备查找的指定货物
-#define GROUND_REPORT_SUCCESS       0x22
+#define CLEAR_POINT_TX                 0x20     
+#define GROUND_SPECIAL_DELIVRY_RX      0x21     //准备查找的指定货物
+#define GROUND_REPORT_SUCCESS_TX       0x22
 
 
 /* ============== 数据结构 ============== */
@@ -155,7 +155,8 @@ void vGround_init_Ano(void)
     vano_sendID_set(pstAnobase_Ground, 0x00, 0);
     vano_sendID_set(pstAnobase_Ground, POINT_PATROL, 0);       /* 外部触发发送 */
     vano_sendID_set(pstAnobase_Ground, POINT_RETURN, 0);       /* 外部触发发送 */
-    vano_sendID_set(pstAnobase_Ground, GROUND_REPORT_SUCCESS, 0);       /* 外部触发发送 */
+    vano_sendID_set(pstAnobase_Ground, GROUND_REPORT_SUCCESS_TX, 0);       /* 外部触发发送 */
+    vano_sendID_set(pstAnobase_Ground, CLEAR_POINT_TX, 0);       /* 外部触发发送 */
 
 }
 DRIVER_INIT(vGround_init_Ano);
@@ -217,24 +218,24 @@ void vGround_DT_Data_Receive_Anl_Ano(uint8_t *pucdata, uint8_t uclen)
         struct delivery_t temp_st = {0};
         memcpy(&temp_st, payload, sizeof(temp_st));
         delivery_add_b(&temp_st);
-        vano_WTS_set(pstAnobase_Ground,GROUND_REPORT_SUCCESS,1);
+        vano_WTS_set(pstAnobase_Ground,GROUND_REPORT_SUCCESS_TX,1);
     }
     break;
-    case GROUND_REQUEST_PATROL: {
+    case GROUND_REQUEST_PATROL_RX: {
         update_flag_set_v(UPDATE_FLAG_REQUEST_PATROL_em);
     }
     break;
-    case GROUND_REQUEST_RETURN: {
+    case GROUND_REQUEST_RETURN_RX: {
         update_flag_set_v(UPDATE_FLAG_REQUEST_RETURN_em);
     }
     break;
-    case GROUND_SPECIAL_DELIVRY:
+    case GROUND_SPECIAL_DELIVRY_RX:
     {
         struct delivery_t temp_st = {0};
         memcpy(&temp_st, payload, sizeof(temp_st));
         delivery_set_special(&temp_st);
         update_flag_set_v(UPDATE_FLAG_DELVIERY_SPECIAL_em);            //特定货物的标志位
-        vano_WTS_set(pstAnobase_Ground,GROUND_REPORT_SUCCESS,1);
+        vano_WTS_set(pstAnobase_Ground,GROUND_REPORT_SUCCESS_TX,1);
     }
     break;
     /* -------- 命令帧（地面站需回 ACK 响应） -------- */
@@ -284,8 +285,17 @@ void vGround_Add_Send_Data_Ano(uint8_t ucFrame_num, uint8_t *pcnt, uint8_t *pucT
         *pcnt += sizeof(snap);
     }
     break;
-    case CLEAR_POINT:               break;
-    case GROUND_REPORT_SUCCESS:     break;
+    case CLEAR_POINT_TX:
+    {
+        pucTxBuffer[(*pcnt)++] = 0x01;
+    }   
+    break;
+
+    case GROUND_REPORT_SUCCESS_TX: 
+    {
+        pucTxBuffer[(*pcnt)++] = 0x01;
+    }
+    break;
     default:
         break;
     }
@@ -302,10 +312,10 @@ void vGround_Data_Exchange_Task_Ano(void)
     vano_ck_back_check(pstAnobase_Ground);
     vano_check_to_send(pstAnobase_Ground, 0x00);
     vano_check_to_send(pstAnobase_Ground, 0xe0);
-    vano_check_to_send(pstAnobase_Ground, REPORT);
     vano_check_to_send(pstAnobase_Ground, POINT_PATROL);
     vano_check_to_send(pstAnobase_Ground, POINT_RETURN);
-    vano_check_to_send(pstAnobase_Ground, GROUND_REPORT_SUCCESS);
+    vano_check_to_send(pstAnobase_Ground, GROUND_REPORT_SUCCESS_TX);
+    vano_check_to_send(pstAnobase_Ground, CLEAR_POINT_TX);
 
 }
 

@@ -45,7 +45,6 @@ void APPTask_LX(void *argument)
     if (current_tick_ul - s_last_tick_pul[1] >= 1000)
     {
         s_last_tick_pul[1] = current_tick_ul;
-
 #if POINT_DEBUG
         static struct delivery_t s_temp_st = {0};
         
@@ -55,10 +54,6 @@ void APPTask_LX(void *argument)
           uart_printf_v(pstbase_screen_uart,0,"%d,%d,%d,%d\r\n",point_3d_st.x_s,point_3d_st.y_s,point_3d_st.z_s,point_3d_st.yaw_s);
         }
 #endif
-
-
-        
-
         if (request_route_b() == true)
         {
             static uint8_t phase_uc = 0;
@@ -88,15 +83,7 @@ void APPTask_LX(void *argument)
             default:
                 break;
             }
-        }
-        
-        
-// #if TOUCH_UART_DEBUG
-//         delivery_set_special(&s_temp_st);
-//         s_temp_st.type_uc++;
-//         update_flag_set_v(UPDATE_FLAG_DELVIERY_SPECIAL_em);
-// #endif        
-
+          }
 
     }
     
