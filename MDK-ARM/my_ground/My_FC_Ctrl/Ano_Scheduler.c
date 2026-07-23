@@ -22,12 +22,13 @@ extern osThreadId_t Ground_UARTHandle;
 void APPTask_LX(void *argument)
 {
   driver_init_all();
-
+#if POINT_DEBUG
   struct Point_3D_t temp = {.x_s = 120,.y_s = 150,.z_s = 180,.yaw_s  = 180};
 
   point_3d_add_b(g_partrol_point_3d_pst, &temp);
   temp.yaw_s  = 120;
   point_3d_add_b(g_partrol_point_3d_pst, &temp);
+#endif
   static uint32_t s_last_tick_pul[2] = {0};
 
   for(;;)
@@ -44,14 +45,16 @@ void APPTask_LX(void *argument)
     if (current_tick_ul - s_last_tick_pul[1] >= 1000)
     {
         s_last_tick_pul[1] = current_tick_ul;
-        // static struct delivery_t s_temp_st = {0};
+
+#if POINT_DEBUG
+        static struct delivery_t s_temp_st = {0};
         
         struct Point_3D_t point_3d_st = {0};
         if(point_3d_take_uc(g_partrol_point_3d_pst,&point_3d_st) == 0)
         {
-          uart_printf_v(pstbase_screen_uart,0,"%d,%d,%d,%d",point_3d_st.x_s,point_3d_st.y_s,point_3d_st.z_s,point_3d_st.yaw_s);
+          uart_printf_v(pstbase_screen_uart,0,"%d,%d,%d,%d\r\n",point_3d_st.x_s,point_3d_st.y_s,point_3d_st.z_s,point_3d_st.yaw_s);
         }
-
+#endif
 
 
         

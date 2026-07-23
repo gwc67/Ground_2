@@ -5,7 +5,7 @@
 #include "main.h"
 
 #define TOUCH_UART_DEBUG 1
-
+#define POINT_DEBUG     0
 #endif
 
 

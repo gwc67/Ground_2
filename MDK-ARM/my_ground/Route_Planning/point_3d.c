@@ -50,25 +50,25 @@ DRIVER_INIT(s_point_3d_init_v);
 bool point_3d_is_empty_b(struct point_3d_base* base)
 {
     struct point_fifo_t* me = container_of(base,struct point_fifo_t,base);
-    return ucRingBufIsEmpty(&me->fifo_st);
+    return ucRingBufIsEmpty(&(me->fifo_st));
 }
 
 void point_3d_clear_b(struct point_3d_base* base)
 {
     struct point_fifo_t* me = container_of(base,struct point_fifo_t,base);
-    ucRingBufClear(&me->fifo_st);
+    ucRingBufClear(&(me->fifo_st));
 }
 
 bool point_3d_add_b(struct point_3d_base* base,const struct Point_3D_t *point_pst)
 {
     struct point_fifo_t* me = container_of(base,struct point_fifo_t,base);
-    return (ucRingBufWriteItem(&me->fifo_st, point_pst) == 0);
+    return (ucRingBufWriteItem(&(me->fifo_st), point_pst) == 0);
 }
 
 uint8_t point_3d_take_uc(struct point_3d_base* base,struct Point_3D_t* point_pst)
 {
     struct point_fifo_t* me = container_of(base,struct point_fifo_t,base);
-    return ucRingBufReadItem(&me->fifo_st,&point_pst);
+    return ucRingBufReadItem(&(me->fifo_st),point_pst);
 }
 
 
