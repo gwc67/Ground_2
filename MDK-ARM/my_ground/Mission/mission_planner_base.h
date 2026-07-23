@@ -15,7 +15,7 @@ typedef struct{
 
 //绑定的操作函数
 struct mission_base_t {
-    mission_ops_t* ops;
+   const mission_ops_t* ops;
 };
 
 bool mission_request_route_b(void);

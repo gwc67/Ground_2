@@ -46,7 +46,8 @@
 #define GROUND_REQUEST_PATROL       0x18
 #define GROUND_REQUEST_RETURN       0x19
 
-#define GROUND_SPECIAL_DELIVRY      0x20     //准备查找的指定货物
+#define CLEAR_POINT                 0x20     
+#define GROUND_SPECIAL_DELIVRY      0x21     //准备查找的指定货物
 
 
 /* ============== 数据结构 ============== */
@@ -54,10 +55,10 @@
 static struct Animal_Report_Data_t s_animal_report_st;
 
 /* 航点发送缓存（0x16 数据帧，分批发送） */
-static struct Point_t s_waypoint_tx_buf[MAX_WAYPOINTS_TOTAL];
-static uint8_t s_waypoint_total;         /* 总航点数 */
-static uint8_t s_waypoint_batch_off;     /* 当前批次起始索引 */
-static uint8_t s_waypoint_batches_left;  /* 剩余批次数 */
+// static struct Point_t s_waypoint_tx_buf[MAX_WAYPOINTS_TOTAL];
+// static uint8_t s_waypoint_total;         /* 总航点数 */
+// static uint8_t s_waypoint_batch_off;     /* 当前批次起始索引 */
+// static uint8_t s_waypoint_batches_left;  /* 剩余批次数 */
 
 
 /* ============== 接收侧 — 飞控发来的 9 个数据帧存储 ============== */
@@ -311,51 +312,18 @@ void vGround_Add_Send_Data_Ano(uint8_t ucFrame_num, uint8_t *pcnt, uint8_t *pucT
         *pcnt += sizeof(snap);
     }
     break;
-
-    // case GS_FRAME_WAYPOINT:
-    // {
-    //     /* 载荷格式：{count(1), Point_t[count] (每个 4 字节: x16+y16)} */
-    //     uint8_t start = s_waypoint_batch_off;
-    //     uint8_t remain = (s_waypoint_total > start) ? (s_waypoint_total - start) : 0;
-    //     uint8_t count = (remain > MAX_WAYPOINTS_PER_FRAME) ? MAX_WAYPOINTS_PER_FRAME : remain;
-    //     pucTxBuffer[(*pcnt)++] = count;
-    //     for (uint8_t i = 0; i < count; i++)
-    //     {
-    //         pucTxBuffer[(*pcnt)++] = (uint8_t)(s_waypoint_tx_buf[start + i].x & 0xFF);
-    //         pucTxBuffer[(*pcnt)++] = (uint8_t)((s_waypoint_tx_buf[start + i].x >> 8) & 0xFF);
-    //         pucTxBuffer[(*pcnt)++] = (uint8_t)(s_waypoint_tx_buf[start + i].y & 0xFF);
-    //         pucTxBuffer[(*pcnt)++] = (uint8_t)((s_waypoint_tx_buf[start + i].y >> 8) & 0xFF);
-    //     }
-    //     /* 链式触发下一批：check_to_send 在调用 Add_Send_Data 前已清 WTS，此处重设安全 */
-    //     s_waypoint_batch_off += MAX_WAYPOINTS_PER_FRAME;
-    //     s_waypoint_batches_left--;
-    //     if (s_waypoint_batches_left > 0)
-    //         vano_WTS_set(pstAnobase_Ground, GS_FRAME_WAYPOINT, 1);
-    // }
-    // break;
-
+    case CLEAR_POINT:       break;
     default:
         break;
     }
 }
 
-/* ============== 物理层发送 ==============
- * ★ vFrame_Send_Ano 拼完整帧后调本函数(经 unique.Send_Buff)。
- * 直接转给 uart_transmit —— 这就是"两层 vtable 的咬合点 2"：
- *   ANO 层把整帧字节交给 UART 层发出。
- * uart_transmit 内部走 TX 队列非阻塞(DMA/IT)，立即返回不等发完。 */
 void vGround_TxBuffer_Ano(uint8_t *pucData, uint8_t ucLength)
 {
     uart_transmit(pstbase_ground_uart, pucData, ucLength);
 }
 
-/* ============== 周期发送调度 ==============
- * 任务循环(Ano_Scheduler.c → Ground_DT_UART)周期调本函数。
- * 三件事：
- *   1) vano_ck_back_check —— 检查命令帧 ACK 超时，该重传就重传
- *   2) vano_check_to_send(0x00) —— 发 ACK 回执帧(若 WTS 置位)
- *   3) vano_check_to_send(各数据帧) —— 按各自频率/标志决定发不发
- * 要新增周期发送的帧？在这里加一行 vano_check_to_send(帧号)。 */
+
 void vGround_Data_Exchange_Task_Ano(void)
 {
     vano_ck_back_check(pstAnobase_Ground);
@@ -374,31 +342,15 @@ void ground_send_animal_report_v(const struct Animal_Report_Data_t *report_st)
     vano_WTS_set(pstAnobase_Ground, REPORT, 1);
 }
 
-/* ============== 航点上传 — 数据帧 0x17 (clear) + 0x16 (航点) ============== */
-
-/**
- * @brief 内部：缓存航点 → 发 clear (0x17) → 任务循环逐批发送 0x16
- */
-// static void waypoint_send_prepare(const struct Point_t *pts, uint8_t cnt)
-// {
-//     if (cnt > MAX_WAYPOINTS_TOTAL)
-//         cnt = MAX_WAYPOINTS_TOTAL;
-
-//     memcpy(s_waypoint_tx_buf, pts, cnt * sizeof(struct Point_t));
-//     s_waypoint_total = cnt;
-//     s_waypoint_batch_off = 0;
-
-//     vano_WTS_set(pstAnobase_Ground, GS_FRAME_WAYPOINT, 1);
-// }
 
 //添加地面站的巡逻航点
-void ground_send_patrol_waypoints_v(const struct Point_t *patrol_pts, uint8_t patrol_cnt)
-{
-    waypoint_send_prepare(patrol_pts, patrol_cnt);
-}
+// void ground_send_patrol_waypoints_v(const struct Point_t *patrol_pts, uint8_t patrol_cnt)
+// {
+//     waypoint_send_prepare(patrol_pts, patrol_cnt);
+// }
 
-//添加地面站算出来的回家航点
-void ground_send_return_waypoints_v(const struct Point_t *return_pts, uint8_t return_cnt)
-{
-    waypoint_send_prepare(return_pts, return_cnt);
-}
+// //添加地面站算出来的回家航点
+// void ground_send_return_waypoints_v(const struct Point_t *return_pts, uint8_t return_cnt)
+// {
+//     waypoint_send_prepare(return_pts, return_cnt);
+// }

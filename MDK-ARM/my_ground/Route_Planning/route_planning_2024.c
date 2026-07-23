@@ -3,7 +3,7 @@
 #include "point_3d.h"
 #include "map/map.h"
 #include "math.h"
-#include "report.h"
+#include "Report/report.h"
 
 
 //最好是封装一个映射函数，能够将世界坐标，映射到具体的A，B系里面
@@ -126,7 +126,13 @@ bool all_the_route_planning_b(void)
     uint8_t type_uc = delivery_get_special_type_uc();
     struct Point_3D_t target_st = {0};
 
-    delivery_find_by_type_b(type_uc,&target_st);
+    struct delivery_t delivery_st = {0};
+    delivery_find_by_type_b(type_uc,&delivery_st);
+    
+    target_st.x_s = delivery_st.x_s;
+    target_st.y_s = delivery_st.y_s;
+    target_st.z_s = delivery_st.z_s;
+    target_st.yaw_s = delivery_st.yaw_s;
     
     
     route_generate_patrol(&target_st);

@@ -69,7 +69,9 @@ void mission_copy_return_screen_path_v(struct FlightPath* out);
 enum mission_send_phase_e
 {
     MISSION_SEND_PHASE_IDLE_em,
+    MISSION_SEND_PHASE_WAITTING_PATROL_em,
     MISSION_SEND_PHASE_PATROL_em,
+    MISSION_SEND_PHASE_WAITTING_RETURN_em,
     MISSION_SEND_PHASE_RETURN_em,
 };
 

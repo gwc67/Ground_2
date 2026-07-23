@@ -2,11 +2,12 @@
 #define __REPORT_H
 
 #include "main.h"
-
+#include "point_3d.h"
 struct delivery_t {
     int16_t x_s;            //世界坐标X
     int16_t y_s;            //世界坐标Y
     int16_t z_s;
+    int16_t yaw_s;
     uint8_t type_uc;        //货物编号 1~24  会给无人机看一张货物的编号，也就是这个值，无人机报送识别的货物编号给地面站显示，地面站显示规划的定点盘点图
     uint8_t position_uc;    //坐标信息 A1 ~ A6 B1 ~ B6 C1 ~ C6 D1 ~ D6
 };

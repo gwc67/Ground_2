@@ -31,13 +31,19 @@
 #include "Ano_Scheduler.h"
 #include "Report/report.h"
 #include "update.h"
+#include "ano.h"
 
-#define LINE_BUF_SIZE  128
-#define POINTS_PER_LINE  10
+
+#define LINE_BUF_SIZE               128
+#define POINTS_PER_LINE             10
+
+#define CLEAR_POINT                 0x20     
+ 
+
+
 static char s_line_buf[LINE_BUF_SIZE];
 struct screen_state_t
 {
-    bool start_fly_task_b;
     bool request_route_b;
 };
 static struct screen_state_t s_screen_state_st;
@@ -158,20 +164,15 @@ static void dispatch_line(const char *line)
 #if COM_DEBUG
             uart_printf_v(pstbase_screen_uart, 0, "start_flytask success !\r\n");
 #endif
-            s_screen_state_st.start_fly_task_b = true;
+            update_flag_set_v(UPDATE_FLAG_BEGIN_FLY_TASK_em);
+            vano_WTS_set(pstAnobase_Ground,CLEAR_POINT,1);
         }
         else
         {
 #if COM_DEBUG
             uart_printf_v(pstbase_screen_uart, 0, "start_flytask fail !\r\n");
 #endif
-            s_screen_state_st.start_fly_task_b = false;
         }
-    }
-    // "stop_flytask" → 清除“开始飞行”标志
-    else if(strcmp(line,"stop_flytask") == 0)
-    {
-        s_screen_state_st.start_fly_task_b = false;
     }
 }
 
@@ -187,10 +188,6 @@ static void dispatch_line(const char *line)
  *   check_phase = 主动查状态
  */
 // 查询“是否已收到开始飞行任务指令”，供主循环 / 任务层判断是否启动飞行
- bool screen_begin_fly_b(void)
- {
-    return s_screen_state_st.start_fly_task_b;
- }
 
 static uint8_t str_to_int16_uc(const char *str, int16_t *array_ps, uint8_t arr_size_uc)
 {
@@ -346,6 +343,5 @@ void screen_set_ui_mode(ui_mode_t mode)
     default: return;
     }
 }
-
 
 

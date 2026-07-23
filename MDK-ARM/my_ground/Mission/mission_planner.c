@@ -148,16 +148,72 @@ bool mission_handle_request_route(void)
     return true;
 }
 
-/*
- * mission_planner_tick - 根据 FC 相位下发航点
- *
- * 采用电平触发 + 发送锁存：当 screen 已启动 且 FC 进入 WAITING 相位
- * 时发送对应航点，同一相位只发一次。解决了原边沿检测在屏幕未就绪
- * 时错过发送窗口的问题。
- */
-//采用发送状态量， 发送后赋值一个状态量
+/// @brief 主循环轮询任务状态量函数
+/// @param  
+
+
+
+
 void mission_planner_tick(void)
 {
+
+
+
+    switch(s_mission_send_phase_em)
+    {
+        case MISSION_SEND_PHASE_IDLE_em:
+        {
+            if (update_flag_consume_uc(UPDATE_FLAG_BEGIN_FLY_TASK_em))
+            {
+                s_mission_send_phase_em = MISSION_SEND_PHASE_WAITTING_PATROL_em;
+            }
+        }
+        break;
+        case MISSION_SEND_PHASE_WAITTING_PATROL_em:
+        {
+            if (update_flag_consume_uc(UPDATE_FLAG_REQUEST_PATROL_em))
+            {
+                s_mission_send_phase_em = MISSION_SEND_PHASE_PATROL_em;
+                screen_set_ui_mode(UI_MODE_PATROL);
+            }
+        }
+        break;
+        case MISSION_SEND_PHASE_PATROL_em:
+        {
+            if (point_3d_is_empty_b(g_partrol_point_3d_pst) == true)
+            {
+                s_mission_send_phase_em = MISSION_SEND_PHASE_WAITTING_RETURN_em;
+            }
+            else
+            {
+                vano_WTS_set(pstAnobase_Ground, 0x16, 1);
+            }
+        }
+        break;
+        case MISSION_SEND_PHASE_WAITTING_RETURN_em:
+        {
+            if (update_flag_consume_uc(UPDATE_FLAG_REQUEST_RETURN_em))
+            {
+                s_mission_send_phase_em = MISSION_SEND_PHASE_RETURN_em;
+                screen_set_ui_mode(UI_MODE_PREVIEW);
+            }
+        }
+        break;
+        case MISSION_SEND_PHASE_RETURN_em:
+        {
+            if (point_3d_is_empty_b(g_return_point_3d_pst) == true)
+            {
+                s_mission_send_phase_em = MISSION_SEND_PHASE_IDLE_em;      //恢复到初始状态，可以尝试二飞，二飞的情况，需要将返航点清空才行
+            }
+            else
+            {
+                vano_WTS_set(pstAnobase_Ground, 0x17, 1);
+            }
+        }
+    }
+    
+    
+    
 	if (update_flag_consume_uc(UPDATE_FLAG_REQUEST_PATROL_em))
     {
         s_mission_send_phase_em = MISSION_SEND_PHASE_PATROL_em;
@@ -169,9 +225,6 @@ void mission_planner_tick(void)
         s_mission_send_phase_em = MISSION_SEND_PHASE_RETURN_em;
 		screen_set_ui_mode(UI_MODE_PREVIEW);
     }
-
-
-    
     if (s_mission_send_phase_em == MISSION_SEND_PHASE_PATROL_em)
     {
         if (point_3d_is_empty_b(g_partrol_point_3d_pst) == false)
@@ -186,6 +239,11 @@ void mission_planner_tick(void)
             vano_WTS_set(pstAnobase_Ground,0x17,1);
         }
     }
+    else if (s_mission_send_phase_em == MISSION_SEND_PHASE_IDLE_em)
+    {
+        return;
+    }
+    
 }
 
 
