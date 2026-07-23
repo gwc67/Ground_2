@@ -72,11 +72,11 @@ void screen_send_delivery(void)
 
 #if TOUCH_UART_DEBUG
 
-        // uart_printf_v(pstbase_screen_uart,0,"\r\npoistion:%d\r\n",delivery_st.position_uc);        //A1 ~ A6 B1 ~ B6 C1 ~ C6 D1 ~ D6
-        // uart_printf_v(pstbase_screen_uart,0,"x:%d\r\n",delivery_st.x_s);
-        // uart_printf_v(pstbase_screen_uart,0,"y:%d\r\n",delivery_st.y_s);
-        // uart_printf_v(pstbase_screen_uart,0,"z:%d\r\n",delivery_st.z_s);
-        // uart_printf_v(pstbase_screen_uart,0,"type:%d\r\n",delivery_st.type_uc);    
+        uart_printf_v(pstbase_screen_uart,0,"\r\npoistion:%d\r\n",delivery_st.position_uc);        //A1 ~ A6 B1 ~ B6 C1 ~ C6 D1 ~ D6
+        uart_printf_v(pstbase_screen_uart,0,"x:%d\r\n",delivery_st.x_s);
+        uart_printf_v(pstbase_screen_uart,0,"y:%d\r\n",delivery_st.y_s);
+        uart_printf_v(pstbase_screen_uart,0,"z:%d\r\n",delivery_st.z_s);
+        uart_printf_v(pstbase_screen_uart,0,"type:%d\r\n",delivery_st.type_uc);    
 #else
         uart_printf_v(pstbase_screen_uart,0,"result.data0.insert(\"%d\")\xff\xff\xff",delivery_st.position_uc);        //A1 ~ A6 B1 ~ B6 C1 ~ C6 D1 ~ D6
         uart_printf_v(pstbase_screen_uart,0,"result.data1.insert(\"%d\")\xff\xff\xff",delivery_st.x_s);
