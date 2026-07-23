@@ -65,10 +65,10 @@ bool point_3d_add_b(struct point_3d_base* base,const struct Point_3D_t *point_ps
     return (ucRingBufWriteItem(&me->fifo_st, point_pst) == 0);
 }
 
-void point_3d_take_t(struct point_3d_base* base,struct Point_3D_t* point_pst)
+uint8_t point_3d_take_uc(struct point_3d_base* base,struct Point_3D_t* point_pst)
 {
     struct point_fifo_t* me = container_of(base,struct point_fifo_t,base);
-    ucRingBufReadItem(&me->fifo_st,&point_pst);
+    return ucRingBufReadItem(&me->fifo_st,&point_pst);
 }
 
 

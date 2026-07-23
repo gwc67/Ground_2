@@ -14,7 +14,7 @@
 #include "touch_uart.h"
 #include "Report/report.h"
 #include "update.h"
-
+#include "ano.h"
 
 extern osThreadId_t UART_TouchHandle;
 extern osThreadId_t Ground_UARTHandle;
@@ -23,11 +23,11 @@ void APPTask_LX(void *argument)
 {
   driver_init_all();
 
-  struct delivery_t a = { .x_s = 150,.y_s = 75,.z_s = 140,.type_uc = 2,.position_uc = 2,.yaw_s = 180};
-  struct delivery_t b = { .x_s = 300,.y_s = 75,.z_s = 140,.type_uc = 1,.position_uc = 1,.yaw_s = 180};
+  struct Point_3D_t temp = {.x_s = 120,.y_s = 150,.z_s = 180,.yaw_s  = 180};
 
-  delivery_add_b(&a);
-  delivery_add_b(&b);
+  point_3d_add_b(g_partrol_point_3d_pst, &temp);
+  temp.yaw_s  = 120;
+  point_3d_add_b(g_partrol_point_3d_pst, &temp);
   static uint32_t s_last_tick_pul[2] = {0};
 
   for(;;)
@@ -41,11 +41,52 @@ void APPTask_LX(void *argument)
         mission_planner_tick();
     }
 
-    if (current_tick_ul - s_last_tick_pul[1] >= 2000)
+    if (current_tick_ul - s_last_tick_pul[1] >= 1000)
     {
         s_last_tick_pul[1] = current_tick_ul;
         // static struct delivery_t s_temp_st = {0};
+        
+        struct Point_3D_t point_3d_st = {0};
+        if(point_3d_take_uc(g_partrol_point_3d_pst,&point_3d_st) == 0)
+        {
+          uart_printf_v(pstbase_screen_uart,0,"%d,%d,%d,%d",point_3d_st.x_s,point_3d_st.y_s,point_3d_st.z_s,point_3d_st.yaw_s);
+        }
 
+
+
+        
+
+        if (request_route_b() == true)
+        {
+            static uint8_t phase_uc = 0;
+            switch (phase_uc)
+            {
+            case 0:
+                if (point_3d_is_empty_b(g_partrol_point_3d_pst) == true)
+                {
+                    phase_uc = 1;
+                }
+                else
+                {
+                    vano_WTS_set(pstAnobase_Ground, 0x16, 1);
+                }
+                break;
+            case 1: {
+                if (point_3d_is_empty_b(g_return_point_3d_pst) == true)
+                {
+                    phase_uc = 0;
+                }
+                else
+                {
+                    vano_WTS_set(pstAnobase_Ground, 0x17, 1);
+                }
+            }
+            break;
+            default:
+                break;
+            }
+        }
+        
         
 // #if TOUCH_UART_DEBUG
 //         delivery_set_special(&s_temp_st);

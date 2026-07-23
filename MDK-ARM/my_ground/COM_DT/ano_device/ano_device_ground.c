@@ -48,11 +48,12 @@
 
 #define CLEAR_POINT                 0x20     
 #define GROUND_SPECIAL_DELIVRY      0x21     //准备查找的指定货物
+#define GROUND_REPORT_SUCCESS       0x22
 
 
 /* ============== 数据结构 ============== */
 
-static struct Animal_Report_Data_t s_animal_report_st;
+
 
 /* 航点发送缓存（0x16 数据帧，分批发送） */
 // static struct Point_t s_waypoint_tx_buf[MAX_WAYPOINTS_TOTAL];
@@ -109,11 +110,6 @@ void vel_fu_copy(struct gs_vel_fu_t *out)
 }
 
 
-
-/* ============== 帧处理函数（封装每类 CMD 的逻辑） ============== */
-/* payload 指向 pucdata + 4（载荷首字节），check_sum1/sum2 用于 ACK 回执 */
-
-/* 0xE0 — 命令帧：按子命令分发，回 CK 校验回执 */
 static void handle_cmd_frame(const uint8_t *payload, u8 check_sum1, u8 check_sum2)
 {
     switch (*payload)
@@ -159,23 +155,12 @@ void vGround_init_Ano(void)
     vano_sendID_set(pstAnobase_Ground, 0x00, 0);
     vano_sendID_set(pstAnobase_Ground, POINT_PATROL, 0);       /* 外部触发发送 */
     vano_sendID_set(pstAnobase_Ground, POINT_RETURN, 0);       /* 外部触发发送 */
+    vano_sendID_set(pstAnobase_Ground, GROUND_REPORT_SUCCESS, 0);       /* 外部触发发送 */
 
 }
 DRIVER_INIT(vGround_init_Ano);
 
-/* ============== 接收帧解析 ==============
- * ★ 状态机收满一整帧后调本函数(经 unique.Ano_Receive_Anl)。
- * pucdata 指向整帧：[0]=0xAA [1]=0xFF [2]=CMD [3]=LEN [4..]=载荷 [后2]=校验
- * uclen = 整帧总字节数。
- *
- * 三步：
- *   1) 校验 LEN 字段一致(pucdata[3] 应等于 uclen-6)
- *   2) 算两级累加校验和，比对帧尾 SUM1/SUM2，不符就丢弃(防错帧)
- *   3) 按 CMD(pucdata[2]) 分发：
- *      - 数据帧(0x01..0x17)：飞控→地面站，直接 memcpy 存进静态变量，
- *        不回 ACK(fire-and-forget，量大丢一帧无所谓)
- *      - 命令帧(0xE0/0xE1/0xE2)：要回 ACK 校验回执(要确认对方执行了)
- *      - 确认帧(0x00)：对方回的 ACK，比对成功就 vano_wait_ck_clear */
+
 void vGround_DT_Data_Receive_Anl_Ano(uint8_t *pucdata, uint8_t uclen)
 {
     u8 check_sum1 = 0, check_sum2 = 0;
@@ -232,6 +217,7 @@ void vGround_DT_Data_Receive_Anl_Ano(uint8_t *pucdata, uint8_t uclen)
         struct delivery_t temp_st = {0};
         memcpy(&temp_st, payload, sizeof(temp_st));
         delivery_add_b(&temp_st);
+        vano_WTS_set(pstAnobase_Ground,GROUND_REPORT_SUCCESS,1);
     }
     break;
     case GROUND_REQUEST_PATROL: {
@@ -247,7 +233,8 @@ void vGround_DT_Data_Receive_Anl_Ano(uint8_t *pucdata, uint8_t uclen)
         struct delivery_t temp_st = {0};
         memcpy(&temp_st, payload, sizeof(temp_st));
         delivery_set_special(&temp_st);
-        update_flag_set_v(UPDATE_FLAG_DELVIERY_SPECIAL_em);         //更新新货物
+        update_flag_set_v(UPDATE_FLAG_DELVIERY_SPECIAL_em);            //特定货物的标志位
+        vano_WTS_set(pstAnobase_Ground,GROUND_REPORT_SUCCESS,1);
     }
     break;
     /* -------- 命令帧（地面站需回 ACK 响应） -------- */
@@ -270,13 +257,6 @@ void vGround_DT_Data_Receive_Anl_Ano(uint8_t *pucdata, uint8_t uclen)
     }
 }
 
-/* ============== 发送数据填充 ==============
- * ★ vFrame_Send_Ano(ano_ture.c) 拼帧时调本函数(经 unique.Ano_Add_Send_Data)。
- * 职责：按帧号(ucFrame_num)把要发的载荷字节追加到 pucTxBuffer，
- * 通过 *pcnt 追加写入位置(函数会累加 *pcnt)。
- * 帧头/LEN/校验由 ano_ture.c 统一处理，这里只管"载荷内容"。
- *
- * 要新增一种"发送数据帧"？在下面 switch 加一个 case 就行。 */
 void vGround_Add_Send_Data_Ano(uint8_t ucFrame_num, uint8_t *pcnt, uint8_t *pucTxBuffer)
 {
     switch (ucFrame_num)
@@ -288,18 +268,10 @@ void vGround_Add_Send_Data_Ano(uint8_t ucFrame_num, uint8_t *pcnt, uint8_t *pucT
         pucTxBuffer[(*pcnt)++] = ano_ck_ac_get(pstAnobase_Ground);
     }
     break;
-
-
-    case REPORT:
-    {
-        memcpy(pucTxBuffer + *(pcnt), &s_animal_report_st, sizeof(s_animal_report_st));
-        *pcnt += sizeof(s_animal_report_st);
-    }
-    break;
     case POINT_PATROL:
     {
         struct Point_3D_t snap = {0};
-        point_3d_take_t(g_partrol_point_3d_pst,&snap);
+        point_3d_take_uc(g_partrol_point_3d_pst,&snap);
         memcpy(pucTxBuffer + *(pcnt), &snap,sizeof(snap));
         *pcnt += sizeof(snap);
     }
@@ -307,12 +279,13 @@ void vGround_Add_Send_Data_Ano(uint8_t ucFrame_num, uint8_t *pcnt, uint8_t *pucT
     case POINT_RETURN:
     {
         struct Point_3D_t snap = {0};
-        point_3d_take_t(g_return_point_3d_pst,&snap);
+        point_3d_take_uc(g_return_point_3d_pst,&snap);
         memcpy(pucTxBuffer + *(pcnt), &snap,sizeof(snap));
         *pcnt += sizeof(snap);
     }
     break;
-    case CLEAR_POINT:       break;
+    case CLEAR_POINT:               break;
+    case GROUND_REPORT_SUCCESS:     break;
     default:
         break;
     }
@@ -332,15 +305,17 @@ void vGround_Data_Exchange_Task_Ano(void)
     vano_check_to_send(pstAnobase_Ground, REPORT);
     vano_check_to_send(pstAnobase_Ground, POINT_PATROL);
     vano_check_to_send(pstAnobase_Ground, POINT_RETURN);
+    vano_check_to_send(pstAnobase_Ground, GROUND_REPORT_SUCCESS);
+
 }
 
 
 
-void ground_send_animal_report_v(const struct Animal_Report_Data_t *report_st)
-{
-    s_animal_report_st = *report_st;
-    vano_WTS_set(pstAnobase_Ground, REPORT, 1);
-}
+// void ground_send_animal_report_v(const struct Animal_Report_Data_t *report_st)
+// {
+//     s_animal_report_st = *report_st;
+//     vano_WTS_set(pstAnobase_Ground, REPORT, 1);
+// }
 
 
 //添加地面站的巡逻航点

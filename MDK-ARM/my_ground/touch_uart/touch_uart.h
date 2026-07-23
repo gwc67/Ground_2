@@ -35,6 +35,8 @@ void screen_set_ui_mode(ui_mode_t mode);
 
 void screen_send_delivery(void);
 
+bool request_route_b(void);
+
 #endif
 
 #endif /* __TOUCH_UART_H */

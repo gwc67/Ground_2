@@ -68,13 +68,22 @@ void screen_send_delivery(void)
                                    
         struct delivery_t delivery_st = {0};
         delivery_copy_by_index_b(s_has_sent_index,&delivery_st);
-        
         s_has_sent_index++;                         //只能加加，直到已经发送过的和现在的索引的一模一样
+
+#if TOUCH_UART_DEBUG
+
+        uart_printf_v(pstbase_screen_uart,0,"\r\npoistion:%d\r\n",delivery_st.position_uc);        //A1 ~ A6 B1 ~ B6 C1 ~ C6 D1 ~ D6
+        uart_printf_v(pstbase_screen_uart,0,"x:%d\r\n",delivery_st.x_s);
+        uart_printf_v(pstbase_screen_uart,0,"y:%d\r\n",delivery_st.y_s);
+        uart_printf_v(pstbase_screen_uart,0,"z:%d\r\n",delivery_st.z_s);
+        uart_printf_v(pstbase_screen_uart,0,"type:%d\r\n",delivery_st.type_uc);    
+#else
         uart_printf_v(pstbase_screen_uart,0,"result.data0.insert(\"%d\")\xff\xff\xff",delivery_st.position_uc);        //A1 ~ A6 B1 ~ B6 C1 ~ C6 D1 ~ D6
-        uart_printf_v(pstbase_screen_uart,0,"result.data4.insert(\"%d\")\xff\xff\xff",delivery_st.type_uc);                //1 ~ 24
         uart_printf_v(pstbase_screen_uart,0,"result.data1.insert(\"%d\")\xff\xff\xff",delivery_st.x_s);
         uart_printf_v(pstbase_screen_uart,0,"result.data2.insert(\"%d\")\xff\xff\xff",delivery_st.y_s);
         uart_printf_v(pstbase_screen_uart,0,"result.data3.insert(\"%d\")\xff\xff\xff",delivery_st.z_s);
+        uart_printf_v(pstbase_screen_uart,0,"result.data4.insert(\"%d\")\xff\xff\xff",delivery_st.type_uc);                //1 ~ 24
+#endif
     }
     
     if (update_flag_consume_uc(UPDATE_FLAG_DELVIERY_SPECIAL_em))
@@ -290,7 +299,7 @@ static void parse_delivery_command(const char *line)
         uart_printf_v(pstbase_screen_uart, 0, "mode=%s\r\n", prefix);
         return;
     }
-    uart_printf_v(pstbase_screen_uart, 0, "clear\r\rn");
+    uart_printf_v(pstbase_screen_uart, 0, "clear\r\n");
 
     uart_printf_v(pstbase_screen_uart,0,"%s_start\r\n",prefix);
 
@@ -335,7 +344,11 @@ static void parse_delivery_command(const char *line)
 
 void screen_set_ui_mode(ui_mode_t mode)
 {
+#if TOUCH_UART_DEBUG
+    uart_printf_v(pstbase_screen_uart, 0, "screen_mode\r\n");
+#else
     uart_printf_v(pstbase_screen_uart, 0, "click b1,0\xff\xff\xff");
+#endif
     struct Point_map_t path_st = {0};
     struct Point_map_t return_st = {0};
     switch (mode) {
@@ -368,4 +381,8 @@ void screen_set_ui_mode(ui_mode_t mode)
     }
 }
 
+bool request_route_b(void)
+{
+    return s_screen_state_st.request_route_b;
+}
 
