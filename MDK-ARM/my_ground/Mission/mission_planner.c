@@ -28,11 +28,13 @@
 #include "update.h"
 #include "mission_planner_base.h"
 #include "Ano_Scheduler.h"
+#include "point_3d.h"
 
 #define COM_DEBUG  1
 #define CELL_SIZE  50   /* 网格边长 (cm)：world = grid * CELL_SIZE */
 
 
+static  enum mission_send_phase_e s_mission_send_phase_em = MISSION_SEND_PHASE_IDLE_em;
 /* ================================================================
  *                        状态与缓存
  * ================================================================ */
@@ -158,17 +160,31 @@ void mission_planner_tick(void)
 {
 	if (update_flag_consume_uc(UPDATE_FLAG_REQUEST_PATROL_em))
     {
-        
-        // ground_send_patrol_waypoints_v(s_patrol_to_fc_pst,
-					    //    s_partrol_compress_st.count);
+        s_mission_send_phase_em = MISSION_SEND_PHASE_PATROL_em;
 		screen_set_ui_mode(UI_MODE_PATROL);
     }
     
     else if (update_flag_consume_uc(UPDATE_FLAG_REQUEST_RETURN_em))
     {
-        ground_send_return_waypoints_v(s_return_to_fc_pst,
-					       s_return_compress_st.count);
+        s_mission_send_phase_em = MISSION_SEND_PHASE_RETURN_em;
 		screen_set_ui_mode(UI_MODE_PREVIEW);
+    }
+
+
+    
+    if (s_mission_send_phase_em == MISSION_SEND_PHASE_PATROL_em)
+    {
+        if (point_3d_is_empty_b(g_partrol_point_3d_pst) == false)
+        {
+            vano_WTS_set(pstAnobase_Ground,0x16,1);
+        }
+    }
+    else if (s_mission_send_phase_em == MISSION_SEND_PHASE_RETURN_em)
+    {
+        if (point_3d_is_empty_b(g_return_point_3d_pst) == false)
+        {
+            vano_WTS_set(pstAnobase_Ground,0x17,1);
+        }
     }
 }
 

@@ -64,4 +64,15 @@ void mission_copy_patrol_screen_path_v(struct FlightPath* out);
  */
 void mission_copy_return_screen_path_v(struct FlightPath* out);
 
+
+
+enum mission_send_phase_e
+{
+    MISSION_SEND_PHASE_IDLE_em,
+    MISSION_SEND_PHASE_PATROL_em,
+    MISSION_SEND_PHASE_RETURN_em,
+};
+
+
+
 #endif /* __MISSION_PLANNER_H */

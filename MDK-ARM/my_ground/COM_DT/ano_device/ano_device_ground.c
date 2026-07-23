@@ -22,6 +22,8 @@
 #include "stdbool.h"
 #include "update.h"
 #include "Report/report.h"
+#include "point_3d.h"
+
 /* 飞控一次最大接受航点数（UART RX 缓冲区限制，10 个 × 4 字节 + 帧开销 < 64 字节） */
 #define MAX_WAYPOINTS_PER_FRAME  10
 /* 航点总数上限 */
@@ -37,7 +39,10 @@
 #define CMD_VEL                     0x12
 #define VEL_FU                      0x13
 #define REPORT                      0x14
-#define GS_FRAME_WAYPOINT           0x16
+
+#define POINT_PATROL                0x16
+#define POINT_RETURN                0x17
+
 #define GROUND_REQUEST_PATROL       0x18
 #define GROUND_REQUEST_RETURN       0x19
 
@@ -151,8 +156,9 @@ static void handle_ack_frame(const uint8_t *payload)
 void vGround_init_Ano(void)
 {
     vano_sendID_set(pstAnobase_Ground, 0x00, 0);
-    vano_sendID_set(pstAnobase_Ground, REPORT, 0);  /* 外部触发发送 */
-    vano_sendID_set(pstAnobase_Ground, GS_FRAME_WAYPOINT, 0);       /* 外部触发发送 */
+    vano_sendID_set(pstAnobase_Ground, POINT_PATROL, 0);       /* 外部触发发送 */
+    vano_sendID_set(pstAnobase_Ground, POINT_RETURN, 0);       /* 外部触发发送 */
+
 }
 DRIVER_INIT(vGround_init_Ano);
 
@@ -242,7 +248,7 @@ void vGround_DT_Data_Receive_Anl_Ano(uint8_t *pucdata, uint8_t uclen)
         delivery_set_special(&temp_st);
         update_flag_set_v(UPDATE_FLAG_DELVIERY_SPECIAL_em);         //更新新货物
     }
-    
+    break;
     /* -------- 命令帧（地面站需回 ACK 响应） -------- */
     case 0xE0:
         handle_cmd_frame(payload, check_sum1, check_sum2);
@@ -289,28 +295,44 @@ void vGround_Add_Send_Data_Ano(uint8_t ucFrame_num, uint8_t *pcnt, uint8_t *pucT
         *pcnt += sizeof(s_animal_report_st);
     }
     break;
-
-    case GS_FRAME_WAYPOINT:
+    case POINT_PATROL:
     {
-        /* 载荷格式：{count(1), Point_t[count] (每个 4 字节: x16+y16)} */
-        uint8_t start = s_waypoint_batch_off;
-        uint8_t remain = (s_waypoint_total > start) ? (s_waypoint_total - start) : 0;
-        uint8_t count = (remain > MAX_WAYPOINTS_PER_FRAME) ? MAX_WAYPOINTS_PER_FRAME : remain;
-        pucTxBuffer[(*pcnt)++] = count;
-        for (uint8_t i = 0; i < count; i++)
-        {
-            pucTxBuffer[(*pcnt)++] = (uint8_t)(s_waypoint_tx_buf[start + i].x & 0xFF);
-            pucTxBuffer[(*pcnt)++] = (uint8_t)((s_waypoint_tx_buf[start + i].x >> 8) & 0xFF);
-            pucTxBuffer[(*pcnt)++] = (uint8_t)(s_waypoint_tx_buf[start + i].y & 0xFF);
-            pucTxBuffer[(*pcnt)++] = (uint8_t)((s_waypoint_tx_buf[start + i].y >> 8) & 0xFF);
-        }
-        /* 链式触发下一批：check_to_send 在调用 Add_Send_Data 前已清 WTS，此处重设安全 */
-        s_waypoint_batch_off += MAX_WAYPOINTS_PER_FRAME;
-        s_waypoint_batches_left--;
-        if (s_waypoint_batches_left > 0)
-            vano_WTS_set(pstAnobase_Ground, GS_FRAME_WAYPOINT, 1);
+        struct Point_3D_t snap = {0};
+        point_3d_take_t(g_partrol_point_3d_pst,&snap);
+        memcpy(pucTxBuffer + *(pcnt), &snap,sizeof(snap));
+        *pcnt += sizeof(snap);
     }
     break;
+    case POINT_RETURN:
+    {
+        struct Point_3D_t snap = {0};
+        point_3d_take_t(g_return_point_3d_pst,&snap);
+        memcpy(pucTxBuffer + *(pcnt), &snap,sizeof(snap));
+        *pcnt += sizeof(snap);
+    }
+    break;
+
+    // case GS_FRAME_WAYPOINT:
+    // {
+    //     /* 载荷格式：{count(1), Point_t[count] (每个 4 字节: x16+y16)} */
+    //     uint8_t start = s_waypoint_batch_off;
+    //     uint8_t remain = (s_waypoint_total > start) ? (s_waypoint_total - start) : 0;
+    //     uint8_t count = (remain > MAX_WAYPOINTS_PER_FRAME) ? MAX_WAYPOINTS_PER_FRAME : remain;
+    //     pucTxBuffer[(*pcnt)++] = count;
+    //     for (uint8_t i = 0; i < count; i++)
+    //     {
+    //         pucTxBuffer[(*pcnt)++] = (uint8_t)(s_waypoint_tx_buf[start + i].x & 0xFF);
+    //         pucTxBuffer[(*pcnt)++] = (uint8_t)((s_waypoint_tx_buf[start + i].x >> 8) & 0xFF);
+    //         pucTxBuffer[(*pcnt)++] = (uint8_t)(s_waypoint_tx_buf[start + i].y & 0xFF);
+    //         pucTxBuffer[(*pcnt)++] = (uint8_t)((s_waypoint_tx_buf[start + i].y >> 8) & 0xFF);
+    //     }
+    //     /* 链式触发下一批：check_to_send 在调用 Add_Send_Data 前已清 WTS，此处重设安全 */
+    //     s_waypoint_batch_off += MAX_WAYPOINTS_PER_FRAME;
+    //     s_waypoint_batches_left--;
+    //     if (s_waypoint_batches_left > 0)
+    //         vano_WTS_set(pstAnobase_Ground, GS_FRAME_WAYPOINT, 1);
+    // }
+    // break;
 
     default:
         break;
@@ -340,7 +362,8 @@ void vGround_Data_Exchange_Task_Ano(void)
     vano_check_to_send(pstAnobase_Ground, 0x00);
     vano_check_to_send(pstAnobase_Ground, 0xe0);
     vano_check_to_send(pstAnobase_Ground, REPORT);
-    vano_check_to_send(pstAnobase_Ground, GS_FRAME_WAYPOINT);
+    vano_check_to_send(pstAnobase_Ground, POINT_PATROL);
+    vano_check_to_send(pstAnobase_Ground, POINT_RETURN);
 }
 
 
@@ -356,17 +379,17 @@ void ground_send_animal_report_v(const struct Animal_Report_Data_t *report_st)
 /**
  * @brief 内部：缓存航点 → 发 clear (0x17) → 任务循环逐批发送 0x16
  */
-static void waypoint_send_prepare(const struct Point_t *pts, uint8_t cnt)
-{
-    if (cnt > MAX_WAYPOINTS_TOTAL)
-        cnt = MAX_WAYPOINTS_TOTAL;
+// static void waypoint_send_prepare(const struct Point_t *pts, uint8_t cnt)
+// {
+//     if (cnt > MAX_WAYPOINTS_TOTAL)
+//         cnt = MAX_WAYPOINTS_TOTAL;
 
-    memcpy(s_waypoint_tx_buf, pts, cnt * sizeof(struct Point_t));
-    s_waypoint_total = cnt;
-    s_waypoint_batch_off = 0;
+//     memcpy(s_waypoint_tx_buf, pts, cnt * sizeof(struct Point_t));
+//     s_waypoint_total = cnt;
+//     s_waypoint_batch_off = 0;
 
-    vano_WTS_set(pstAnobase_Ground, GS_FRAME_WAYPOINT, 1);
-}
+//     vano_WTS_set(pstAnobase_Ground, GS_FRAME_WAYPOINT, 1);
+// }
 
 //添加地面站的巡逻航点
 void ground_send_patrol_waypoints_v(const struct Point_t *patrol_pts, uint8_t patrol_cnt)
