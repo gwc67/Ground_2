@@ -27,7 +27,8 @@
 #include <stdlib.h>
 // ANO 协议设备层（飞控通信），本文件内仅在头文件依赖链中被引用
 #include "ano_device_ground.h"
-
+#include "point_3d.h"
+#include "Ano_Scheduler.h"
 #include "Report/report.h"
 #if PYTHON_DEBUG
 /* ================================================================
@@ -283,52 +284,59 @@ void screen_send_delivery(void)
     
 }
 
-static void parse_zone_command(const char *line)
-{
-    const uint8_t *p = (const uint8_t *)line + 5;  // 跳过 "zone:" 5字节前缀
-    struct Point_index_t zones[3];
-    uint8_t count = 0;
+// static void parse_zone_command(const char *line)
+// {
+//     const uint8_t *p = (const uint8_t *)line + 5;  // 跳过 "zone:" 5字节前缀
+//     struct Point_index_t zones[3];
+//     uint8_t count = 0;
 
-    // 循环解析每组 (x,y)，最多支持3组禁飞区
-    while (*p != '\0' && count < 3)
-    {
-        if (*p == '(')
-        {
-            p++;
-            uint8_t x = *p++;
-            p++;
-            uint8_t y = *p++;
-            p++;
-            if (x < 9 && y < 7)
-            {
-                zones[count].x = x;
-                zones[count].y = y;
-                count++;
-            }
-        }
-        else
-        {
-            p++;
-        }
-    }
-    mission_reset_no_fly_zones_v();
-    if (count > 0)
-    {
-        mission_set_no_fly_zones(count, zones);
-    }
-}
-/**
- * 处理一行完整命令
- *
- * request_route 成功后：
- * 1. mission 层已计算 + 缓存双路线
- * 2. 本层从 mission getter 取数据 → 发 path:/return: 到屏幕
- */
+//     // 循环解析每组 (x,y)，最多支持3组禁飞区
+//     while (*p != '\0' && count < 3)
+//     {
+//         if (*p == '(')
+//         {
+//             p++;
+//             uint8_t x = *p++;
+//             p++;
+//             uint8_t y = *p++;
+//             p++;
+//             if (x < 9 && y < 7)
+//             {
+//                 zones[count].x = x;
+//                 zones[count].y = y;
+//                 count++;
+//             }
+//         }
+//         else
+//         {
+//             p++;
+//         }
+//     }
+//     mission_reset_no_fly_zones_v();
+//     if (count > 0)
+//     {
+//         mission_set_no_fly_zones(count, zones);
+//     }
+// }
+
+
+static uint8_t str_to_int16_uc(const char *str, int16_t *array_ps, uint8_t arr_size_uc);
+static void parse_zone_command(const char *line);
+static void parse_delivery_command(const char *line);
+
 static void dispatch_line(const char *line)
 {
     if (strncmp(line, "zone:", 5) == 0) {
+        line += strlen("zone:");
         parse_zone_command(line);
-    } else if (strcmp(line, "request_route") == 0) {
+    } 
+    else if (strncmp(line,"delivery:",9))
+    {
+        line += strlen("delivery:");
+        parse_delivery_command(line);
+    }
+    
+    else if (strcmp(line, "request_route") == 0) {
         if (mission_handle_request_route()) {
             s_screen_state_st.request_route_b = true;
             screen_set_ui_mode(UI_MODE_PREVIEW);
@@ -368,6 +376,9 @@ static void dispatch_line(const char *line)
         s_screen_state_st.start_fly_task_b = false;
     }
 }
+
+
+
 /**
  * 解析串口屏命令（DrvUartDataCheck 中调用）
  */
@@ -413,5 +424,82 @@ void screen_uart_check_touch(void)
  {
     return s_screen_state_st.start_fly_task_b;
  }
+
+static uint8_t str_to_int16_uc(const char *str, int16_t *array_ps, uint8_t arr_size_uc)
+{
+    if (str == NULL || array_ps == NULL || arr_size_uc == 0) {
+        return 0;
+    }
+
+    uint8_t count = 0;
+    
+    while (*str != '\0' && count < arr_size_uc) 
+    {
+
+        while (*str != '\0' && *str != '-' && *str != '+' && (*str < '0' || *str > '9')) {
+            str++;
+        }
+        if (*str == '\0') break;
+
+
+        int32_t sign = 1;
+        if (*str == '-') { sign = -1; str++; }
+        else if (*str == '+') { str++; }
+
+
+        if (*str < '0' || *str > '9') continue;
+
+        int32_t val = 0;
+        while (*str >= '0' && *str <= '9') {
+            val = val * 10 + (*str - '0');
+            str++;
+        }
+        val *= sign;
+
+        if (val > INT16_MAX) val = INT16_MAX;       // 32767
+        else if (val < INT16_MIN) val = INT16_MIN;  // -32768
+
+        array_ps[count++] = (int16_t)val;
+    }
+    return count;
+}
+
+
+ static void parse_zone_command(const char *line)
+{
+    struct Point_index_t zones[3];
+
+    int16_t array_ps[20] = {0};
+
+    uint8_t data_num =  str_to_int16_uc(line,array_ps,sizeof(array_ps) / sizeof(array_ps[0]));
+    
+
+    for (uint8_t i = 0; i < data_num ; i+=2)
+    {
+        zones[i/2].x = (uint8_t)array_ps[i];
+        zones[i/2].y = (uint8_t)array_ps[i+1];
+#if TOUCH_UART_DEBUG
+    uart_printf_v(pstbase_screen_uart,0,"set zone: x:%d , y:%d\r\n",zones[i/2].x,zones[i/2].y);
+#endif
+    }
+    
+
+    
+    mission_reset_no_fly_zones_v();
+
+    if (data_num >=2)
+    {
+        mission_set_no_fly_zones(data_num/2, zones);
+    }
+    
+}
+ 
+
+static void parse_delivery_command(const char *line)
+{
+    
+}
+
+ 
 #endif
 
