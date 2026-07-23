@@ -3,6 +3,8 @@
 #include "point_3d.h"
 #include "map/map.h"
 #include "math.h"
+#include "report.h"
+
 
 //最好是封装一个映射函数，能够将世界坐标，映射到具体的A，B系里面
 //建议航线规划使用世界坐标，而航点显示，简单使用普通映射系即可
@@ -118,8 +120,35 @@ void route_generate_return(const struct Point_3D_t* target_pst)
 }
 
 
+bool all_the_route_planning_b(void)
+{
+
+    uint8_t type_uc = delivery_get_special_type_uc();
+    struct Point_3D_t target_st = {0};
+
+    delivery_find_by_type_b(type_uc,&target_st);
+    
+    
+    route_generate_patrol(&target_st);
+    route_generate_return(&target_st);
+
+    return true;
+
+}
 
 
+
+bool can_route_planning_b(void)
+{
+    if(delivery_get_special_type_uc() == 0) 
+    {
+        return false;
+    }
+    else
+    {
+        return true;
+    }
+}
 
 
 

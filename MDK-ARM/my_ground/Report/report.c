@@ -104,3 +104,8 @@ void delivery_copy_special(struct delivery_t* out)
 {
     *out = s_delivery_special_st;
 }
+
+uint8_t delivery_get_special_type_uc(void)
+{
+    return s_delivery_special_st.type_uc;
+}

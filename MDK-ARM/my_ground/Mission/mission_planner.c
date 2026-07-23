@@ -26,7 +26,9 @@
 #include "ano.h"
 #include "touch_uart.h"
 #include "update.h"
-#include "route_planning_2024.h"
+#include "mission_planner_base.h"
+#include "Ano_Scheduler.h"
+
 #define COM_DEBUG  1
 #define CELL_SIZE  50   /* 网格边长 (cm)：world = grid * CELL_SIZE */
 
@@ -129,20 +131,18 @@ void mission_request_route(void)                                                
 }
 
 
+
 bool mission_handle_request_route(void)
 {
-//     if (!mission_can_request_route()) {
-// #if COM_DEBUG
-//         uart_printf_v(pstbase_screen_uart, 0, "[MSN] reject: phase %d\r\n",
-//             mission_get_fc_phase());
-// #endif
-//         return false;
-//     }
+    if (mission_can_request_route_b()) {
+#if TOUCH_UART_DEBUG
+        uart_printf_v(pstbase_screen_uart, 0, "can not request route\r\n");
+#endif
+        return false;
+    }
 
-//     //这个就是真正计算路径的函数，它会将
-//     mission_request_route();
-    
-    // route_generate_patrol()
+    mission_request_route_b();                  //计算航线， 那怎么发呢
+
     return true;
 }
 
@@ -158,8 +158,9 @@ void mission_planner_tick(void)
 {
 	if (update_flag_consume_uc(UPDATE_FLAG_REQUEST_PATROL_em))
     {
-        ground_send_patrol_waypoints_v(s_patrol_to_fc_pst,
-					       s_partrol_compress_st.count);
+        
+        // ground_send_patrol_waypoints_v(s_patrol_to_fc_pst,
+					    //    s_partrol_compress_st.count);
 		screen_set_ui_mode(UI_MODE_PATROL);
     }
     

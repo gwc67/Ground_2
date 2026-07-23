@@ -26,5 +26,8 @@ void delivery_set_special(struct delivery_t* in);
 
 void delivery_copy_special(struct delivery_t* out);
 
+uint8_t delivery_get_special_type_uc(void);
+
+
 
 #endif
