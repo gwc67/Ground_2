@@ -32,7 +32,7 @@
 #include "Report/report.h"
 #include "update.h"
 #include "ano.h"
-
+#include "map/point_2d.h"
 
 #define LINE_BUF_SIZE               128
 #define POINTS_PER_LINE             10
@@ -97,7 +97,7 @@ static uint8_t str_to_int16_uc(const char *str, int16_t *array_ps, uint8_t arr_s
 static void parse_zone_command(const char *line);
 static void parse_delivery_command(const char *line);
 static void dispatch_line(const char *line);
-static void screen_send_path(const char *prefix, const struct FlightPath *fp);
+ static void screen_send_path(const char *prefix, const struct Point_map_t *fp);
 void screen_set_ui_mode(ui_mode_t mode);
 
 void screen_uart_check_touch(void)
@@ -264,24 +264,26 @@ static void parse_delivery_command(const char *line)
 
     uint8_t count_uc = 0;
     int16_t array_ps[20] = {0};
-    struct Point_3D_t temp_st = {0};
+    struct delivery_t temp_st = {0};
 
     uint8_t data_num =  str_to_int16_uc(line,array_ps,sizeof(array_ps) / sizeof(array_ps[0]));
 
 
-    temp_st.x_s = array_ps[count_uc++];
-    temp_st.y_s = array_ps[count_uc++];
-    temp_st.z_s = array_ps[count_uc++];
+    temp_st.type_uc = (uint8_t)array_ps[count_uc++];
 
 
 #if TOUCH_UART_DEBUG
-    uart_printf_v(pstbase_screen_uart,0,"target_pos:x:%d,y:%d,z:%d\r\n",temp_st.x_s,temp_st.y_s,temp_st.z_s);
-#endif
+    uart_printf_v(pstbase_screen_uart,0,"type_uc:%d\r\n",temp_st.type_uc);
+
+    //调试阶段，可以自己设置，之后得关掉
+    //根据设置的type_uc = 1, = 2 算出，并打印出此时的航点
+    delivery_set_special(&temp_st);
+#endif    
 }
 
- static void screen_send_path(const char *prefix, const struct FlightPath *fp)
+ static void screen_send_path(const char *prefix, const struct Point_map_t *fp)
 {
-    if (fp->count == 0) {
+    if (fp->count_uc == 0) {
         uart_printf_v(pstbase_screen_uart, 0, "t2.txt=%s\xff\xff\xff", prefix);
         return;
     }
@@ -290,19 +292,19 @@ static void parse_delivery_command(const char *line)
     {
         uart_printf_v(pstbase_screen_uart,0,"tip1=5\xff\xff\xff");
     //第一个航点是起点，但是我的地面站显示的时候是手动点击的，所以我直接从i=1开始就可以了
-        for (uint8_t i = 0; i < fp->count; i++)
+        for (uint8_t i = 0; i < fp->count_uc; i++)
     {
         uart_printf_v(pstbase_screen_uart, 0,"source=%d\xff\xff\xff",
-                      covx(fp->points[i].x, fp->points[i].y));
+                      covx(fp->point_mat_pst[i].x_c, fp->point_mat_pst[i].y_c));
         uart_printf_v(pstbase_screen_uart,0,"click m1,1\xff\xff\xff");
     }
     }else if(strcmp(prefix,"巡查模式") == 0)
     {
         uart_printf_v(pstbase_screen_uart,0,"tip1=4\xff\xff\xff");
-        for (uint8_t i = 0; i < fp->count; i++)
+        for (uint8_t i = 0; i < fp->count_uc; i++)
     {
         uart_printf_v(pstbase_screen_uart, 0,"source=%d\xff\xff\xff",
-                      covx(fp->points[i].x, fp->points[i].y));
+                      covx(fp->point_mat_pst[i].x_c, fp->point_mat_pst[i].y_c));
         uart_printf_v(pstbase_screen_uart,0,"click m0,1\xff\xff\xff");
     }
     }
@@ -314,29 +316,31 @@ static void parse_delivery_command(const char *line)
 void screen_set_ui_mode(ui_mode_t mode)
 {
     uart_printf_v(pstbase_screen_uart, 0, "click b1,0\xff\xff\xff");
-    struct FlightPath path_st = {0};
-    struct FlightPath return_st = {0};
+    struct Point_map_t path_st = {0};
+    struct Point_map_t return_st = {0};
     switch (mode) {
     case UI_MODE_PREVIEW:
     {
         // 预览模式：同时显示巡查 + 返航两条路线
-        mission_copy_patrol_screen_path_v(&path_st);
+        point_map_take_t(&path_st);
         screen_send_path("巡查模式",&path_st);      // 发巡查路径
-        mission_copy_return_screen_path_v(&return_st);
+        point_map_take_t(&return_st);
         screen_send_path("返航模式",&return_st);  // 发返航路径
     }
     break;
     case UI_MODE_PATROL:
     {
         // 仅巡查模式：只发巡查路径
-        mission_copy_patrol_screen_path_v(&path_st);
+        // mission_copy_patrol_screen_path_v(&path_st);
+        point_map_take_t(&path_st);
         screen_send_path("巡查模式",&path_st);
     }
     break;
     case UI_MODE_RETURN:
     {
         // 仅返航模式：只发返航路径
-        mission_copy_return_screen_path_v(&return_st);
+        // mission_copy_return_screen_path_v(&return_st);
+        point_map_take_t(&path_st);
         screen_send_path("返航模式",&return_st);
     }
     break;

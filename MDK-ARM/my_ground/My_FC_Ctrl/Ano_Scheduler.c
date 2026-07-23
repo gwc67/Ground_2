@@ -44,14 +44,14 @@ void APPTask_LX(void *argument)
     if (current_tick_ul - s_last_tick_pul[1] >= 2000)
     {
         s_last_tick_pul[1] = current_tick_ul;
-        static struct delivery_t s_temp_st = {0};
+        // static struct delivery_t s_temp_st = {0};
 
         
-#if TOUCH_UART_DEBUG
-        delivery_set_special(&s_temp_st);
-        s_temp_st.type_uc++;
-        update_flag_set_v(UPDATE_FLAG_DELVIERY_SPECIAL_em);
-#endif        
+// #if TOUCH_UART_DEBUG
+//         delivery_set_special(&s_temp_st);
+//         s_temp_st.type_uc++;
+//         update_flag_set_v(UPDATE_FLAG_DELVIERY_SPECIAL_em);
+// #endif        
 
 
     }

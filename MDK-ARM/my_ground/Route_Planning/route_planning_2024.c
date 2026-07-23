@@ -8,7 +8,7 @@
 
 //最好是封装一个映射函数，能够将世界坐标，映射到具体的A，B系里面
 //建议航线规划使用世界坐标，而航点显示，简单使用普通映射系即可
-
+#define ABS(x) ((x) > 0 ? (x) : -(x))
 
 struct Point_3D_t return_st = {.x_s = 350,.y_s = 250,.z_s = 140,.yaw_s = 0};  //目标的yaw_s 和 
 
@@ -27,7 +27,7 @@ enum shelf_e{
 #define AISLE_Y_2   275         //U形转换避障的坐标，偏上的坐标
 
 #define YAW_FONT        0
-#define YAW_REAR        180
+#define YAW_REAR        120 
 
 #define SHELF_NUM sizeof(c_shelf_param_pst)/sizeof(c_shelf_param_pst[0])
 
@@ -60,7 +60,7 @@ void route_generate_patrol(const struct Point_3D_t* target_pst)
     target_cur_st.yaw_s = target_pst->yaw_s;
     target_cur_st.z_s = target_pst->z_s;
 
-    if (target_cur_st.yaw_s == YAW_REAR)
+    if (ABS(target_cur_st.yaw_s) > YAW_REAR)
     {
         point_3d_add_b(g_partrol_point_3d_pst,&target_cur_st);            //先转到指定yaw角
         map_set_v(&target_cur_st);
