@@ -270,7 +270,8 @@ static uint8_t str_to_int16_uc(const char *str, int16_t *array_ps, uint8_t arr_s
     
 }
  
-
+/// @brief 这是一个测试函数，用于测试目标target_货物使用
+/// @param line 
 static void parse_delivery_command(const char *line)
 {
 
@@ -289,8 +290,8 @@ static void parse_delivery_command(const char *line)
 
     //调试阶段，可以自己设置，之后得关掉
     //根据设置的type_uc = 1, = 2 算出，并打印出此时的航点
-    delivery_set_special(&temp_st);
 #endif    
+    delivery_set_special(&temp_st);
 }
 
  static void screen_send_path(const char *prefix, const struct Point_map_t *fp)

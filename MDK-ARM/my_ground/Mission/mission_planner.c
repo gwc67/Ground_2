@@ -30,7 +30,7 @@
 #include "Ano_Scheduler.h"
 #include "point_3d.h"
 
-#define COM_DEBUG  1
+
 #define CELL_SIZE  50   /* 网格边长 (cm)：world = grid * CELL_SIZE */
 
 

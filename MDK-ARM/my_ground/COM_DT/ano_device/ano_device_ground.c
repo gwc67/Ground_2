@@ -320,22 +320,3 @@ void vGround_Data_Exchange_Task_Ano(void)
 }
 
 
-
-// void ground_send_animal_report_v(const struct Animal_Report_Data_t *report_st)
-// {
-//     s_animal_report_st = *report_st;
-//     vano_WTS_set(pstAnobase_Ground, REPORT, 1);
-// }
-
-
-//添加地面站的巡逻航点
-// void ground_send_patrol_waypoints_v(const struct Point_t *patrol_pts, uint8_t patrol_cnt)
-// {
-//     waypoint_send_prepare(patrol_pts, patrol_cnt);
-// }
-
-// //添加地面站算出来的回家航点
-// void ground_send_return_waypoints_v(const struct Point_t *return_pts, uint8_t return_cnt)
-// {
-//     waypoint_send_prepare(return_pts, return_cnt);
-// }

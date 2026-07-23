@@ -54,44 +54,12 @@ void APPTask_LX(void *argument)
           uart_printf_v(pstbase_screen_uart,0,"%d,%d,%d,%d\r\n",point_3d_st.x_s,point_3d_st.y_s,point_3d_st.z_s,point_3d_st.yaw_s);
         }
 #endif
-        if (request_route_b() == true)
-        {
-            static uint8_t phase_uc = 0;
-            switch (phase_uc)
-            {
-            case 0:
-                if (point_3d_is_empty_b(g_partrol_point_3d_pst) == true)
-                {
-                    phase_uc = 1;
-                }
-                else
-                {
-                    vano_WTS_set(pstAnobase_Ground, 0x16, 1);
-                }
-                break;
-            case 1: {
-                if (point_3d_is_empty_b(g_return_point_3d_pst) == true)
-                {
-                    phase_uc = 0;
-                }
-                else
-                {
-                    vano_WTS_set(pstAnobase_Ground, 0x17, 1);
-                }
-            }
-            break;
-            default:
-                break;
-            }
-          }
-
-    }
-    
-    xTaskNotifyGive(Ground_UARTHandle);
-    xTaskNotifyGive(UART_TouchHandle);
-
+        
+            
+        }
+        xTaskNotifyGive(Ground_UARTHandle);
+        xTaskNotifyGive(UART_TouchHandle);
   }
-
 }
 
 
