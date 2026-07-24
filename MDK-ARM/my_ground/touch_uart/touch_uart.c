@@ -208,7 +208,11 @@ static void dispatch_line(const char *line)
         }
         if (s_count_uc == 3)
         {
-            s_screen_state_st.start_fly_task_b == false;   //只有按下在两秒内 stop_flytask 按键3次才能重新二飞
+#if TOUCH_UART_DEBUG
+
+            uart_printf_v(pstbase_screen_uart,0,"关闭飞行,再次start会清零航点!重新发送航点，如果有飞机正在飞行，注意一下\r\n");
+#endif
+            s_screen_state_st.start_fly_task_b = false;   //只有按下在两秒内 stop_flytask 按键3次才能重新二飞
             s_count_uc = 0;
         }
     }

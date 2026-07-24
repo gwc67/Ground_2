@@ -157,7 +157,31 @@ bool mission_handle_request_route(void)
 void mission_planner_tick(void)
 {
 
-
+#if START_FLASK_QUICK
+    switch(s_mission_send_phase_em)
+    {
+        case MISSION_SEND_PHASE_IDLE_em:
+        {
+            if (update_flag_consume_uc(UPDATE_FLAG_BEGIN_FLY_TASK_em))                 //只要地面站请求了路线，这里就会直接进入
+            {
+                s_mission_send_phase_em = MISSION_SEND_PHASE_PATROL_em;
+            }
+        }
+        break;
+        case MISSION_SEND_PHASE_PATROL_em:                                             //直接一口气全发了，不等飞机那啥
+        {
+            if (point_3d_is_empty_b(g_patrol_point_3d_pst) == true)
+            {
+                s_mission_send_phase_em = MISSION_SEND_PHASE_IDLE_em;
+            }
+            else
+            {
+                vano_WTS_set(pstAnobase_Ground, 0x16, 1);
+            }
+        }
+        break;
+    }
+#else
 
     switch(s_mission_send_phase_em)
     {
@@ -211,6 +235,7 @@ void mission_planner_tick(void)
         //     }
         // }
     }
+#endif
 }
 
 

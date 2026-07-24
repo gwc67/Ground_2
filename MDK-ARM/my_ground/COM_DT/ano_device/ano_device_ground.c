@@ -23,7 +23,8 @@
 #include "update.h"
 #include "Report/report.h"
 #include "point_3d.h"
-
+#include "uart_log.h"
+#include "Ano_Scheduler.h"
 /* 飞控一次最大接受航点数（UART RX 缓冲区限制，10 个 × 4 字节 + 帧开销 < 64 字节） */
 #define MAX_WAYPOINTS_PER_FRAME  10
 /* 航点总数上限 */
@@ -40,8 +41,8 @@
 #define VEL_FU                      0x13
 #define REPORT                      0x14
 
-#define POINT_PATROL                0x16
-#define POINT_RETURN                0x17
+#define POINT_PATROL_TX                0x16
+#define POINT_RETURN_TX                0x17
 
 #define GROUND_REQUEST_PATROL_RX       0x18
 #define GROUND_REQUEST_RETURN_RX       0x19
@@ -153,8 +154,8 @@ static void handle_ack_frame(const uint8_t *payload)
 void vGround_init_Ano(void)
 {
     vano_sendID_set(pstAnobase_Ground, 0x00, 0);
-    vano_sendID_set(pstAnobase_Ground, POINT_PATROL, 0);       /* 外部触发发送 */
-    vano_sendID_set(pstAnobase_Ground, POINT_RETURN, 0);       /* 外部触发发送 */
+    vano_sendID_set(pstAnobase_Ground, POINT_PATROL_TX, 0);       /* 外部触发发送 */
+    vano_sendID_set(pstAnobase_Ground, POINT_RETURN_TX, 0);       /* 外部触发发送 */
     vano_sendID_set(pstAnobase_Ground, GROUND_REPORT_SUCCESS_TX, 0);       /* 外部触发发送 */
     vano_sendID_set(pstAnobase_Ground, CLEAR_POINT_TX, 0);       /* 外部触发发送 */
 
@@ -269,15 +270,18 @@ void vGround_Add_Send_Data_Ano(uint8_t ucFrame_num, uint8_t *pcnt, uint8_t *pucT
         pucTxBuffer[(*pcnt)++] = ano_ck_ac_get(pstAnobase_Ground);
     }
     break;
-    case POINT_PATROL:
+    case POINT_PATROL_TX:
     {
         struct Point_3D_t snap = {0};
         point_3d_take_uc(g_patrol_point_3d_pst,&snap);
         memcpy(pucTxBuffer + *(pcnt), &snap,sizeof(snap));
         *pcnt += sizeof(snap);
+#if TOUCH_UART_DEBUG
+        uart_printf_v(pstbase_screen_uart,0,"(%d,%d,%d,%d,%d)",snap.x_s,snap.y_s,snap.z_s,snap.yaw_s,snap.wp_action_uc);
+#endif
     }
     break;
-    case POINT_RETURN:
+    case POINT_RETURN_TX:
     {
         struct Point_3D_t snap = {0};
         point_3d_take_uc(g_return_point_3d_pst,&snap);
@@ -312,8 +316,8 @@ void vGround_Data_Exchange_Task_Ano(void)
     vano_ck_back_check(pstAnobase_Ground);
     vano_check_to_send(pstAnobase_Ground, 0x00);
     vano_check_to_send(pstAnobase_Ground, 0xe0);
-    vano_check_to_send(pstAnobase_Ground, POINT_PATROL);
-    vano_check_to_send(pstAnobase_Ground, POINT_RETURN);
+    vano_check_to_send(pstAnobase_Ground, POINT_PATROL_TX);
+    vano_check_to_send(pstAnobase_Ground, POINT_RETURN_TX);
     vano_check_to_send(pstAnobase_Ground, GROUND_REPORT_SUCCESS_TX);
     vano_check_to_send(pstAnobase_Ground, CLEAR_POINT_TX);
 
