@@ -22,6 +22,12 @@
 
 /* USER CODE BEGIN 0 */
 
+
+
+
+
+
+
 /* USER CODE END 0 */
 
 TIM_HandleTypeDef htim1;
