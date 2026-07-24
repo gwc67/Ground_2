@@ -180,7 +180,7 @@ void mission_planner_tick(void)
         break;
         case MISSION_SEND_PHASE_PATROL_em:
         {
-            if (point_3d_is_empty_b(g_partrol_point_3d_pst) == true)
+            if (point_3d_is_empty_b(g_patrol_point_3d_pst) == true)
             {
                 s_mission_send_phase_em = MISSION_SEND_PHASE_WAITTING_RETURN_em;
             }
@@ -227,7 +227,7 @@ void mission_planner_tick(void)
     }
     if (s_mission_send_phase_em == MISSION_SEND_PHASE_PATROL_em)
     {
-        if (point_3d_is_empty_b(g_partrol_point_3d_pst) == false)
+        if (point_3d_is_empty_b(g_patrol_point_3d_pst) == false)
         {
             vano_WTS_set(pstAnobase_Ground,0x16,1);
         }

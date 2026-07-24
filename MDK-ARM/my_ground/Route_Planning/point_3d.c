@@ -20,7 +20,7 @@ static uint8_t s_patrol_buf[TARGET_QUEUE_CAPACITY * sizeof(struct Point_3D_t)];
 static struct point_fifo_t s_return_fifo_st;
 static uint8_t s_return_buf[TARGET_QUEUE_CAPACITY * sizeof(struct Point_3D_t)];
 
-struct point_3d_base* g_partrol_point_3d_pst;
+struct point_3d_base* g_patrol_point_3d_pst;
 struct point_3d_base* g_return_point_3d_pst;
 
 static struct point_3d_base* s_point_fifo_base_init(struct point_fifo_t* fifo_pst,const char* name)
@@ -36,7 +36,7 @@ static void s_point_3d_init_v(void)
                      TARGET_QUEUE_CAPACITY * sizeof(struct Point_3D_t),
                      sizeof(struct Point_3D_t),
                      s_patrol_buf);
-    g_partrol_point_3d_pst = s_point_fifo_base_init(&s_patrol_fifo_st,"patrol");
+    g_patrol_point_3d_pst = s_point_fifo_base_init(&s_patrol_fifo_st,"patrol");
 
     vRingBufItemInit(&s_return_fifo_st.fifo_st,
                      TARGET_QUEUE_CAPACITY * sizeof(struct Point_3D_t),

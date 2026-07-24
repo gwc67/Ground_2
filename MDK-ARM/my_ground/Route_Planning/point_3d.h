@@ -8,14 +8,23 @@ struct Point_3D_t{
     int16_t y_s;
     int16_t z_s;
     int16_t yaw_s;
+    uint8_t wp_action_uc;
 };
+
+
+enum wp_action_e {
+    WP_ACTION_PASS_em = 0,
+    WP_ACTION_SCAN_em,
+};
+
+
 
 struct point_3d_base{
     const char* name;
 };
 
 
-extern struct point_3d_base* g_partrol_point_3d_pst;
+extern struct point_3d_base* g_patrol_point_3d_pst;
 extern struct point_3d_base* g_return_point_3d_pst;
 
 bool point_3d_is_empty_b(struct point_3d_base* base);

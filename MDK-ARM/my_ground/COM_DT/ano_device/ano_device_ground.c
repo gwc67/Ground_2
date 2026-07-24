@@ -272,7 +272,7 @@ void vGround_Add_Send_Data_Ano(uint8_t ucFrame_num, uint8_t *pcnt, uint8_t *pucT
     case POINT_PATROL:
     {
         struct Point_3D_t snap = {0};
-        point_3d_take_uc(g_partrol_point_3d_pst,&snap);
+        point_3d_take_uc(g_patrol_point_3d_pst,&snap);
         memcpy(pucTxBuffer + *(pcnt), &snap,sizeof(snap));
         *pcnt += sizeof(snap);
     }

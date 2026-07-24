@@ -12,7 +12,16 @@
 
 struct Point_3D_t return_st = {.x_s = 350,.y_s = 250,.z_s = 140,.yaw_s = 0};  //目标的yaw_s 和 
 
+static bool s_add_scan(struct point_3d_base* g_point_pst  ,struct Point_3D_t* point_3d_pst)
+{
+    return point_3d_add_b(g_point_pst,point_3d_pst);
+}
 
+/* 过渡航点 — 直接飞过，不触发摄像头 */
+static bool s_add_transit(struct point_3d_base* g_point_pst  ,struct Point_3D_t* point_3d_pst)
+{
+    return point_3d_add_b(g_point_pst,point_3d_pst);
+}
 
 enum shelf_e{
     SHELF_A,
@@ -54,7 +63,7 @@ static enum shelf_e s_identify_shelf_face_em(const struct Point_3D_t* target_pst
 void route_generate_patrol(const struct Point_3D_t* target_pst)
 {
 
-    point_3d_clear_b(g_partrol_point_3d_pst);
+    point_3d_clear_b(g_patrol_point_3d_pst);
     point_3d_clear_b(g_return_point_3d_pst);
     point_2d_clear_b();
 
@@ -67,7 +76,7 @@ void route_generate_patrol(const struct Point_3D_t* target_pst)
 
     if (ABS(target_cur_st.yaw_s) > YAW_REAR)
     {
-        point_3d_add_b(g_partrol_point_3d_pst,&target_cur_st);            //先转到指定yaw角
+        s_add_transit(g_patrol_point_3d_pst,&target_cur_st);            //先转到指定yaw角
         // map_set_v(&target_cur_st);
     }
     
@@ -76,20 +85,20 @@ void route_generate_patrol(const struct Point_3D_t* target_pst)
         // A面直达
         target_cur_st.x_s = target_pst->x_s;
         target_cur_st.y_s = target_pst->y_s;
-        point_3d_add_b(g_partrol_point_3d_pst,&target_cur_st);
+        s_add_scan(g_patrol_point_3d_pst,&target_cur_st);
         map_set_v(&target_cur_st);
     } else {
         target_cur_st.y_s = AISLE_Y_1;
-        point_3d_add_b(g_partrol_point_3d_pst,&target_cur_st);
+        s_add_transit(g_patrol_point_3d_pst,&target_cur_st);
         map_set_v(&target_cur_st);
 
 
         target_cur_st.x_s = target_pst->x_s;  // 保持当前X进入巷道
-        point_3d_add_b(g_partrol_point_3d_pst,&target_cur_st);
+        s_add_transit(g_patrol_point_3d_pst,&target_cur_st);
         map_set_v(&target_cur_st);
 
         target_cur_st.y_s = target_pst->y_s;
-        point_3d_add_b(g_partrol_point_3d_pst,&target_cur_st);  // 最终目标点
+        s_add_scan(g_patrol_point_3d_pst,&target_cur_st);  // 最终目标点
         map_set_v(&target_cur_st);
 
         
@@ -99,19 +108,19 @@ void route_generate_patrol(const struct Point_3D_t* target_pst)
     {
         target_cur_st.y_s = AISLE_Y_2;
 
-        point_3d_add_b(g_return_point_3d_pst, &target_cur_st);
+        s_add_transit(g_return_point_3d_pst, &target_cur_st);
         map_set_v(&target_cur_st);
 
         target_cur_st.x_s = return_st.x_s;
 
-        point_3d_add_b(g_return_point_3d_pst, &target_cur_st);
+        s_add_transit(g_return_point_3d_pst, &target_cur_st);
         map_set_v(&target_cur_st);
     }
 
     // 最后添加一个返航终点即可                  //45°降落，我想一下，没关系，我的缓冲区可以获取最后一个长度判断是否是以及最后一个航点，可以实现
     target_cur_st.x_s = return_st.x_s;
     target_cur_st.y_s = return_st.y_s;
-    point_3d_add_b(g_return_point_3d_pst, &target_cur_st);
+    s_add_transit(g_return_point_3d_pst, &target_cur_st);
     map_set_v(&target_cur_st);
 }
 
