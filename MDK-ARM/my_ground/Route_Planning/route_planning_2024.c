@@ -14,12 +14,14 @@ struct Point_3D_t return_st = {.x_s = 350,.y_s = 250,.z_s = 140,.yaw_s = 0};  //
 
 static bool s_add_scan(struct point_3d_base* g_point_pst  ,struct Point_3D_t* point_3d_pst)
 {
+    point_3d_pst->wp_action_uc = WP_ACTION_SCAN_em;
     return point_3d_add_b(g_point_pst,point_3d_pst);
 }
 
 /* 过渡航点 — 直接飞过，不触发摄像头 */
 static bool s_add_transit(struct point_3d_base* g_point_pst  ,struct Point_3D_t* point_3d_pst)
 {
+    point_3d_pst->wp_action_uc = WP_ACTION_PASS_em;
     return point_3d_add_b(g_point_pst,point_3d_pst);
 }
 

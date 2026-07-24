@@ -93,7 +93,7 @@ void screen_send_delivery(void)
         struct delivery_t delivery_st = {0};
         delivery_copy_special(&delivery_st);
 #if TOUCH_UART_DEBUG
-        uart_printf_v(pstbase_screen_uart,0,"target_type_uc:%d",delivery_st.type_uc);
+        uart_printf_v(pstbase_screen_uart,0,"target_type_uc:%d\r\n",delivery_st.type_uc);
 #else   
         uart_printf_v(pstbase_screen_uart,0,"result.data4.insert(\"%d\")\xff\xff\xff",delivery_st.type_uc);         //货物编号显示
 #endif
@@ -175,7 +175,7 @@ static void dispatch_line(const char *line)
     {
        if (s_screen_state_st.request_route_b && s_screen_state_st.start_fly_task_b == false)
         {
-#if COM_DEBUG
+#if TOUCH_UART_DEBUG
             uart_printf_v(pstbase_screen_uart, 0, "start_flytask success !\r\n");
 #endif
             s_screen_state_st.start_fly_task_b = true;
@@ -184,39 +184,67 @@ static void dispatch_line(const char *line)
         }
         else
         {
-#if COM_DEBUG
-            uart_printf_v(pstbase_screen_uart, 0, "start_flytask fail !\r\n");
+#if TOUCH_UART_DEBUG
+            uart_printf_v(pstbase_screen_uart, 0, "执行失败 是否请求路径或关闭飞行 !\r\n");
 #endif
         }
     }
-    else if (strcmp(line,"stop_flytask") == 0)
+    else if (strcmp(line, "stop_flytask") == 0)
     {
         static uint8_t s_count_uc = 0;
-        static uint32_t s_first_press_ul = 0;               //第一次按下的时候
+        static uint32_t s_first_press_ul = 0; // 第一次按下的时候
 
-        if (s_count_uc == 0)                                //第一次按下
+        uint32_t cur_time_ul = xTaskGetTickCount();
+
+        if (s_count_uc == 0) // 第一次按下
         {
-            s_first_press_ul = xTaskGetTickCount();
-        }
-        if (xTaskGetTickCount() - s_first_press_ul > 2000)
-        {
-            s_count_uc = 0;
+            s_first_press_ul = cur_time_ul;
+            s_count_uc = 1;
         }
         else
         {
-            s_count_uc++;
-        }
-        if (s_count_uc == 3)
-        {
-#if TOUCH_UART_DEBUG
 
-            uart_printf_v(pstbase_screen_uart,0,"关闭飞行,再次start会清零航点!重新发送航点，如果有飞机正在飞行，注意一下\r\n");
+#if TOUCH_UART_DEBUG
+            if (cur_time_ul - s_first_press_ul > 2000)
+            {
+                s_count_uc = 1;
+                s_first_press_ul = cur_time_ul;
+
+                uart_printf_v(pstbase_screen_uart, 0, "超时2s，重新记录\r\n");
+            }
+            else
+            {
+                uart_printf_v(pstbase_screen_uart, 0, "2s累计按下:%d\r\n", s_count_uc);
+                s_count_uc++;
+                if (s_count_uc == 3)
+                {
+                    s_screen_state_st.start_fly_task_b = false;
+                    s_screen_state_st.request_route_b = false;
+                    uart_printf_v(pstbase_screen_uart, 0, "关闭飞行,注意一下\r\n");
+
+                    s_count_uc = 0;
+                }
+            }
+
+#else
+            if (cur_time_ul - s_first_press_ul > 2000)
+            {
+                s_count_uc = 1;
+                s_first_press_ul = cur_time_ul;
+            }
+            else
+            {
+                s_count_uc++;
+                if (s_count_uc == 3)
+                {
+                    s_screen_state_st.start_fly_task_b = false;
+                    s_count_uc = 0;
+                }
+            }
+
 #endif
-            s_screen_state_st.start_fly_task_b = false;   //只有按下在两秒内 stop_flytask 按键3次才能重新二飞
-            s_count_uc = 0;
         }
     }
-    
 }
 
 

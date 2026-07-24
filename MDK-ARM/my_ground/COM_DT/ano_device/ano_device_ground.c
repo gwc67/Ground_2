@@ -292,6 +292,9 @@ void vGround_Add_Send_Data_Ano(uint8_t ucFrame_num, uint8_t *pcnt, uint8_t *pucT
     case CLEAR_POINT_TX:
     {
         pucTxBuffer[(*pcnt)++] = 0x01;
+#if TOUCH_UART_DEBUG
+        uart_printf_v(pstbase_screen_uart,0,"CLEAR_POINT\r\n");
+#endif
     }   
     break;
 
