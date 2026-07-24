@@ -98,6 +98,21 @@ void screen_send_delivery(void)
         uart_printf_v(pstbase_screen_uart,0,"result.data4.insert(\"%d\")\xff\xff\xff",delivery_st.type_uc);         //货物编号显示
 #endif
     }
+
+    if (update_flag_consume_uc(UPDATE_FLAG_FINISH_SPECIAL_em))            //类似刚刚手动切换成type_一样，这是只是使用无人机切换罢了
+    {
+        struct delivery_t delivery_st = {0};
+        uint8_t type_uc =  delivery_get_special_type_uc();
+
+        delivery_find_by_type_b(type_uc,&delivery_st);
+
+#if TOUCH_UART_DEBUG
+        uart_printf_v(pstbase_screen_uart,0,"target_type_uc:%d\r\n",delivery_st.type_uc);
+        uart_printf_v(pstbase_screen_uart,0,"target_position_uc:%d\r\n",delivery_st.position_uc);
+#else   
+        uart_printf_v(pstbase_screen_uart,0,"result.data4.insert(\"%d\")\xff\xff\xff",delivery_st.type_uc);         //货物编号显示
+#endif
+    }
     
     
 }

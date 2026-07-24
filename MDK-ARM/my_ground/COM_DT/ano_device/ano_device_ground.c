@@ -50,6 +50,7 @@
 #define CLEAR_POINT_TX                 0x20     
 #define GROUND_SPECIAL_DELIVRY_RX      0x21     //准备查找的指定货物
 #define GROUND_REPORT_SUCCESS_TX       0x22
+#define GROUDN_FINSH_SPECIAL_RX        0x23     //最后的盘点显示UPDATE_FLAG_FINISH_SPECIAL_em
 
 
 /* ============== 数据结构 ============== */
@@ -228,6 +229,11 @@ void vGround_DT_Data_Receive_Anl_Ano(uint8_t *pucdata, uint8_t uclen)
     break;
     case GROUND_REQUEST_RETURN_RX: {
         update_flag_set_v(UPDATE_FLAG_REQUEST_RETURN_em);
+    }
+    break;
+    case GROUDN_FINSH_SPECIAL_RX:
+    {
+        update_flag_set_v(UPDATE_FLAG_FINISH_SPECIAL_em);
     }
     break;
     case GROUND_SPECIAL_DELIVRY_RX:

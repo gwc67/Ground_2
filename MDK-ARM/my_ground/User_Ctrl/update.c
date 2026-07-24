@@ -13,6 +13,7 @@ static struct update_flag_field s_fields[] = {
     [UPDATE_FLAG_REQUEST_RETURN_em] = {.name = "request_return",.val_em = UPDATE_STATE_NO_DATA_em},
     [UPDATE_FLAG_DELVIERY_SPECIAL_em] = {.name = "delivery_special",.val_em = UPDATE_STATE_NO_DATA_em},
     [UPDATE_FLAG_BEGIN_FLY_TASK_em] = {.name = "start_fly_task",.val_em = UPDATE_STATE_NO_DATA_em},
+    [UPDATE_FLAG_FINISH_SPECIAL_em] = {.name = "finish_special",.val_em = UPDATE_STATE_NO_DATA_em},
 };
 
 /* 编译期校验：designated initializer 的最大下标 + 1 == 数组长度 */
