@@ -56,9 +56,9 @@ void APPTask_LX(void *argument)
 #endif
         
             
-        }
-        xTaskNotifyGive(Ground_UARTHandle);
-        xTaskNotifyGive(UART_TouchHandle);
+      }
+      xTaskNotifyGive(Ground_UARTHandle);
+      xTaskNotifyGive(UART_TouchHandle);
   }
 }
 
