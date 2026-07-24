@@ -33,7 +33,8 @@
 #include "update.h"
 #include "ano.h"
 #include "map/point_2d.h"
-
+#include "FreeRTOS.h"
+#include "task.h"
 #define LINE_BUF_SIZE               128
 #define POINTS_PER_LINE             10
 
@@ -44,6 +45,7 @@
 static char s_line_buf[LINE_BUF_SIZE];
 struct screen_state_t
 {
+    bool start_fly_task_b;
     bool request_route_b;
 };
 static struct screen_state_t s_screen_state_st;
@@ -168,14 +170,15 @@ static void dispatch_line(const char *line)
     {
         screen_set_ui_mode(UI_MODE_RETURN);
     }
-    // "start_flytask" → 置位“开始飞行”标志
+    // "start_flytask" → 置位“开始飞行”标志 只会按下一次，如果之后想要二飞测试呢？
     else if (strcmp(line,"start_flytask") == 0)
     {
-       if (s_screen_state_st.request_route_b)
+       if (s_screen_state_st.request_route_b && s_screen_state_st.start_fly_task_b == false)
         {
 #if COM_DEBUG
             uart_printf_v(pstbase_screen_uart, 0, "start_flytask success !\r\n");
 #endif
+            s_screen_state_st.start_fly_task_b = true;
             update_flag_set_v(UPDATE_FLAG_BEGIN_FLY_TASK_em);
             vano_WTS_set(pstAnobase_Ground,CLEAR_POINT_TX,1);
         }
@@ -186,6 +189,30 @@ static void dispatch_line(const char *line)
 #endif
         }
     }
+    else if (strcmp(line,"stop_flytask") == 0)
+    {
+        static uint8_t s_count_uc = 0;
+        static uint32_t s_first_press_ul = 0;               //第一次按下的时候
+
+        if (s_count_uc == 0)                                //第一次按下
+        {
+            s_first_press_ul = xTaskGetTickCount();
+        }
+        if (xTaskGetTickCount() - s_first_press_ul > 2000)
+        {
+            s_count_uc = 0;
+        }
+        else
+        {
+            s_count_uc++;
+        }
+        if (s_count_uc == 3)
+        {
+            s_screen_state_st.start_fly_task_b == false;   //只有按下在两秒内 stop_flytask 按键3次才能重新二飞
+            s_count_uc = 0;
+        }
+    }
+    
 }
 
 

@@ -23,10 +23,11 @@ void APPTask_LX(void *argument)
 {
   driver_init_all();
 #if POINT_DEBUG
-  struct Point_3D_t temp = {.x_s = 120,.y_s = 150,.z_s = 180,.yaw_s  = 180};
+  struct Point_3D_t temp = {.x_s = 120,.y_s = 150,.z_s = 180,.yaw_s  = 180,.wp_action_uc = 1};
 
   point_3d_add_b(g_patrol_point_3d_pst, &temp);
-  temp.yaw_s  = 120;
+  temp.yaw_s  = 120; 
+  temp.wp_action_uc = 0;
   point_3d_add_b(g_patrol_point_3d_pst, &temp);
 #endif
   static uint32_t s_last_tick_pul[2] = {0};
@@ -46,7 +47,6 @@ void APPTask_LX(void *argument)
     {
         s_last_tick_pul[1] = current_tick_ul;
 #if POINT_DEBUG
-        static struct delivery_t s_temp_st = {0};
         
         struct Point_3D_t point_3d_st = {0};
         if(point_3d_take_uc(g_patrol_point_3d_pst,&point_3d_st) == 0)

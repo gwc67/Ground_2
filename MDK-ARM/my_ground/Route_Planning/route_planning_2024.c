@@ -108,20 +108,20 @@ void route_generate_patrol(const struct Point_3D_t* target_pst)
     {
         target_cur_st.y_s = AISLE_Y_2;
 
-        s_add_transit(g_return_point_3d_pst, &target_cur_st);
+        s_add_transit(g_patrol_point_3d_pst, &target_cur_st);
         map_set_v(&target_cur_st);
 
         target_cur_st.x_s = return_st.x_s;
 
-        s_add_transit(g_return_point_3d_pst, &target_cur_st);
+        s_add_transit(g_patrol_point_3d_pst, &target_cur_st);
         map_set_v(&target_cur_st);
     }
 
-    // 最后添加一个返航终点即可                  //45°降落，我想一下，没关系，我的缓冲区可以获取最后一个长度判断是否是以及最后一个航点，可以实现
+    // 最后添加一个返航终点即可                  //可以给航点加一个信息，叫做花样降落，只需要再定义一个标志量就行了
     target_cur_st.x_s = return_st.x_s;
     target_cur_st.y_s = return_st.y_s;
-    s_add_transit(g_return_point_3d_pst, &target_cur_st);
-    map_set_v(&target_cur_st);
+    s_add_transit(g_patrol_point_3d_pst, &target_cur_st);
+    map_set_v(&target_cur_st);  
 }
 
 

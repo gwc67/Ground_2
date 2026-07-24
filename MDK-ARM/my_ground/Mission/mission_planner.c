@@ -163,7 +163,7 @@ void mission_planner_tick(void)
     {
         case MISSION_SEND_PHASE_IDLE_em:
         {
-            if (update_flag_consume_uc(UPDATE_FLAG_BEGIN_FLY_TASK_em))
+            if (update_flag_consume_uc(UPDATE_FLAG_BEGIN_FLY_TASK_em))                 //只要地面站请求了路线，这里就会直接进入
             {
                 s_mission_send_phase_em = MISSION_SEND_PHASE_WAITTING_PATROL_em;
             }
@@ -174,15 +174,15 @@ void mission_planner_tick(void)
             if (update_flag_consume_uc(UPDATE_FLAG_REQUEST_PATROL_em))
             {
                 s_mission_send_phase_em = MISSION_SEND_PHASE_PATROL_em;
-                screen_set_ui_mode(UI_MODE_PATROL);
+                // screen_set_ui_mode(UI_MODE_PATROL);
             }
         }
         break;
-        case MISSION_SEND_PHASE_PATROL_em:
+        case MISSION_SEND_PHASE_PATROL_em:                                              //这里可以直接使用就行，地面站可以不用改发送逻辑，只是让这里一口气发完罢了
         {
             if (point_3d_is_empty_b(g_patrol_point_3d_pst) == true)
             {
-                s_mission_send_phase_em = MISSION_SEND_PHASE_WAITTING_RETURN_em;
+                s_mission_send_phase_em = MISSION_SEND_PHASE_IDLE_em;
             }
             else
             {
@@ -190,60 +190,27 @@ void mission_planner_tick(void)
             }
         }
         break;
-        case MISSION_SEND_PHASE_WAITTING_RETURN_em:
-        {
-            if (update_flag_consume_uc(UPDATE_FLAG_REQUEST_RETURN_em))
-            {
-                s_mission_send_phase_em = MISSION_SEND_PHASE_RETURN_em;
-                screen_set_ui_mode(UI_MODE_PREVIEW);
-            }
-        }
-        break;
-        case MISSION_SEND_PHASE_RETURN_em:
-        {
-            if (point_3d_is_empty_b(g_return_point_3d_pst) == true)
-            {
-                s_mission_send_phase_em = MISSION_SEND_PHASE_IDLE_em;      //恢复到初始状态，可以尝试二飞，二飞的情况，需要将返航点清空才行
-            }
-            else
-            {
-                vano_WTS_set(pstAnobase_Ground, 0x17, 1);
-            }
-        }
+        // case MISSION_SEND_PHASE_WAITTING_RETURN_em:
+        // {
+        //     if (update_flag_consume_uc(UPDATE_FLAG_REQUEST_RETURN_em))
+        //     {
+        //         s_mission_send_phase_em = MISSION_SEND_PHASE_RETURN_em;
+        //         screen_set_ui_mode(UI_MODE_PREVIEW);
+        //     }
+        // }
+        // break;
+        // case MISSION_SEND_PHASE_RETURN_em:
+        // {
+        //     if (point_3d_is_empty_b(g_return_point_3d_pst) == true)
+        //     {
+        //         s_mission_send_phase_em = MISSION_SEND_PHASE_IDLE_em;      //恢复到初始状态，可以尝试二飞，二飞的情况，需要将返航点清空才行
+        //     }
+        //     else
+        //     {
+        //         vano_WTS_set(pstAnobase_Ground, 0x17, 1);
+        //     }
+        // }
     }
-    
-    
-    
-	if (update_flag_consume_uc(UPDATE_FLAG_REQUEST_PATROL_em))
-    {
-        s_mission_send_phase_em = MISSION_SEND_PHASE_PATROL_em;
-		screen_set_ui_mode(UI_MODE_PATROL);
-    }
-    
-    else if (update_flag_consume_uc(UPDATE_FLAG_REQUEST_RETURN_em))
-    {
-        s_mission_send_phase_em = MISSION_SEND_PHASE_RETURN_em;
-		screen_set_ui_mode(UI_MODE_PREVIEW);
-    }
-    if (s_mission_send_phase_em == MISSION_SEND_PHASE_PATROL_em)
-    {
-        if (point_3d_is_empty_b(g_patrol_point_3d_pst) == false)
-        {
-            vano_WTS_set(pstAnobase_Ground,0x16,1);
-        }
-    }
-    else if (s_mission_send_phase_em == MISSION_SEND_PHASE_RETURN_em)
-    {
-        if (point_3d_is_empty_b(g_return_point_3d_pst) == false)
-        {
-            vano_WTS_set(pstAnobase_Ground,0x17,1);
-        }
-    }
-    else if (s_mission_send_phase_em == MISSION_SEND_PHASE_IDLE_em)
-    {
-        return;
-    }
-    
 }
 
 
