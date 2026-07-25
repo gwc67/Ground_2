@@ -33,10 +33,17 @@ void map_set_v(struct Point_3D_t* in)
                           : (y_shifted - GRID_STEP + 1) / GRID_STEP);
 
 
-    point_2d_patrol_add_b(&point_2d_st);
+    point_2d_add_b(&point_2d_st);
 
 }
 
+void map_get_world_v(struct Point_2D_t* in,struct Point_3D_t* out)
+{
+    if(!in || !out) return;
+    
+    out->x_s = (int16_t)(in->x_c) * MAP_WIDTH;
+    out->y_s = (int16_t)(in->x_c) * MAP_LENGTH;
+}
 
 
 
