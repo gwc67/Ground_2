@@ -432,7 +432,7 @@ void screen_set_ui_mode(ui_mode_t mode)
     case UI_MODE_PREVIEW:
     {
         // 预览模式：同时显示巡查 + 返航两条路线
-        point_2d_patrol_take_v(&path_st);
+        point_map_take_v(g_patrol_point_2d_pst, &path_st);
         screen_send_path("巡查模式",&path_st);      // 发巡查路径
         // point_patrol_take_v(&return_st);
         // screen_send_path("返航模式",&return_st);  // 发返航路径
@@ -442,7 +442,7 @@ void screen_set_ui_mode(ui_mode_t mode)
     {
         // 仅巡查模式：只发巡查路径
         // mission_copy_patrol_screen_path_v(&path_st);
-        point_2d_patrol_take_v(&path_st);
+        point_map_take_v(g_patrol_point_2d_pst,&path_st);
         screen_send_path("巡查模式",&path_st);
     }
     break;
@@ -450,7 +450,7 @@ void screen_set_ui_mode(ui_mode_t mode)
     {
         // 仅返航模式：只发返航路径
         // mission_copy_return_screen_path_v(&return_st);
-        point_2d_patrol_take_v(&path_st);
+        point_map_take_v(g_return_point_2d_pst,&path_st);
         screen_send_path("返航模式",&return_st);
     }
     break;

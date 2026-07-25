@@ -67,7 +67,7 @@ void route_generate_patrol(const struct Point_3D_t* target_pst)
 
     point_3d_clear_b(g_patrol_point_3d_pst);
     point_3d_clear_b(g_return_point_3d_pst);
-    point_2d_clear_b();
+    point_2d_clear_b(g_patrol_point_2d_pst);
 
     enum shelf_e shelf_em =  s_identify_shelf_face_em(target_pst);  
     
