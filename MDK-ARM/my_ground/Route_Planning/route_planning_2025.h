@@ -19,6 +19,12 @@ enum block_loc_e{
     // BLOCK_LOC_VERTICAL_LEFT_em,
 };
 
+enum probe_point_e{
+    PROBE_POINT_IDLE_em,
+    PROBE_POINT_BEGIN_PROBE_em,
+    PROBE_POINT_PROBE_em,
+};
+
 void plan_path_v(void);
 
 
