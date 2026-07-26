@@ -54,7 +54,7 @@ void APPTask_LX(void *argument)
 
 
         
-        #if POINT_DEBUG
+#if PLAN_TEST
         
         // static bool s_test_b = false;
       

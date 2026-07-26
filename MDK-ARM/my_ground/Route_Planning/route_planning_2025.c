@@ -102,11 +102,16 @@ static enum block_loc_e get_block_loc_em(uint8_t grid_puc[GRID_Y][GRID_X],struct
                     /* 内部水平障碍物，记录但不立即返回，继续搜索是否有贴边的 */
                     result = BLOCK_LOC_HORIZONTAL_em;
                 }
-
-                
-                
             }
+        }
+        dir_c *= -1;
+    }
 
+    dir_c = 1;
+    for (uint8_t x = 0; x < GRID_X; x++)
+    {
+        for (uint8_t y = 0; y < GRID_Y; y++)
+        {
             /* ========== 垂直方向检测（连续3格在同一列） ========== */
             if (y <= GRID_Y - 3 &&
                 grid_puc[y][x]     == 1 &&
@@ -116,15 +121,7 @@ static enum block_loc_e get_block_loc_em(uint8_t grid_puc[GRID_Y][GRID_X],struct
                 block_pst->x_c = x;
                 block_pst->y_c = dir_c > 0 ? y : y + 2;
                 /* 判断贴边情况 */
-                if (x == 0)
-                {
-                    return BLOCK_LOC_VERTICAL_RIGHT_em;   /* 贴左边界，只能向右走 */
-                }
-                else if (x == GRID_X - 1)
-                {
-                    return BLOCK_LOC_VERTICAL_LEFT_em;    /* 贴右边界，只能向左走 */
-                }
-                else if (y == 0)
+                 if (y == 0)
                 {
                     return BLOCK_LOC_VERTICAL_DOWN_em;    /* 贴上边界 */
                 }
@@ -137,20 +134,24 @@ static enum block_loc_e get_block_loc_em(uint8_t grid_puc[GRID_Y][GRID_X],struct
                     /* 内部垂直障碍物 */
                     result = BLOCK_LOC_VERTICAL_em;
                 }
-
             }
         }
         dir_c *= -1;
     }
-
     return result;
 }
 
 
 static void s_block_loc_no_regular_plan(struct Point_map_t* map_pst);
+
 static void s_block_loc_horizontal_center_plan(struct Point_map_t* map_pst ,struct Point_2D_t* block_st);
 static void s_block_loc_horizontal_left_plan(struct Point_map_t* map_pst , struct Point_2D_t * block_st);
 static void s_block_loc_horizontal_right_plan(struct Point_map_t* map_pst , struct Point_2D_t * block_st);
+
+static void s_block_loc_vertical_center_plan(struct Point_map_t* map_pst ,struct Point_2D_t* block_st);
+static void s_block_loc_vertical_up_plan(struct Point_map_t* map_pst , struct Point_2D_t * block_st);
+static void s_block_loc_vertical_down_plan(struct Point_map_t* map_pst , struct Point_2D_t * block_st);
+
 
 void plan_path_v(void)
 {
@@ -160,34 +161,38 @@ void plan_path_v(void)
 
     struct Point_2D_t block_st = {0};                                           //获取障碍物体的坐标
 
+#if PLAN_TEST
+
     struct Point_2D_t test[3] = {
-        [0] = {.x_c = 6,.y_c = 6},
-        [1] = {.x_c = 7,.y_c = 6},
-        [2] = {.x_c = 8,.y_c = 6},
+        [0] = {.x_c = 3,.y_c = 4},
+        [1] = {.x_c = 3,.y_c = 2},
+        [2] = {.x_c = 3,.y_c = 3},
     };
     route_set_no_fly_zone(test,3);
-    
+#endif
     no_fly_zone_to_grid(grid_puc);
 
     enum block_loc_e block_loc_em = get_block_loc_em(grid_puc,&block_st);
 
-    // block_loc_em = BLOCK_LOC_HORIZONTAL_LEFT_em;
-    // block_st.x_c = 2;
-    // block_st.y_c = 1;
     switch (block_loc_em)
     {
-    case BLOCK_LOC_NO_REGULAR_em:           s_block_loc_no_regular_plan(&map_st);                         break;
-    case BLOCK_LOC_HORIZONTAL_em:           s_block_loc_horizontal_center_plan(&map_st,&block_st);        break;
-    case BLOCK_LOC_HORIZONTAL_LEFT_em :     s_block_loc_horizontal_left_plan(&map_st,&block_st);          break;
-    case BLOCK_LOC_HORIZONTAL_RIGHT_em :    s_block_loc_horizontal_right_plan(&map_st,&block_st);          break;
+    case BLOCK_LOC_NO_REGULAR_em:           s_block_loc_no_regular_plan(&map_st);                           break;
+    case BLOCK_LOC_HORIZONTAL_em:           s_block_loc_horizontal_center_plan(&map_st,&block_st);          break;
+    case BLOCK_LOC_HORIZONTAL_LEFT_em :     s_block_loc_horizontal_left_plan(&map_st,&block_st);            break;
+    case BLOCK_LOC_HORIZONTAL_RIGHT_em :    s_block_loc_horizontal_right_plan(&map_st,&block_st);           break;
+
+    case BLOCK_LOC_VERTICAL_em:             s_block_loc_vertical_center_plan(&map_st,&block_st);            break;
+    case BLOCK_LOC_VERTICAL_UP_em:          s_block_loc_vertical_up_plan(&map_st,&block_st);              break;
+    case BLOCK_LOC_VERTICAL_DOWN_em:        s_block_loc_vertical_down_plan(&map_st,&block_st);             break;
     default:
         break;
     }
-
+#if PLAN_TEST
     for (int i = 0; i < map_st.count_uc; i++)
     {        
-        uart_printf_v(pstbase_screen_uart, 0, "(%d,%d)\r\n", map_st.point_mat_pst[i].x_c, map_st.point_mat_pst[i].y_c);
+        uart_printf_v(pstbase_screen_uart, 0, "(%d,%d),\r\n", map_st.point_mat_pst[i].x_c, map_st.point_mat_pst[i].y_c);
     }
+#endif
 }
 
 //没有障碍物
@@ -242,6 +247,9 @@ static void s_block_loc_horizontal_center_plan(struct Point_map_t* map_pst ,stru
             if (point_2d_st.x_c == block_st->x_c - dir_c && point_2d_st.y_c== block_st->y_c)
             {
                 
+                s_add_map_point(map_pst, &point_2d_st);
+                map_get_world_v(&point_2d_st, &point_3d_st);
+                s_point_3d_add_pass(g_patrol_point_3d_pst, &point_3d_st);
                 if (y > 0)                                  //NB  point_2d_st.y_c = y; 这个真是十分巧妙
                 {
                     point_2d_st.y_c = y - 1;
@@ -379,7 +387,7 @@ static void s_block_loc_horizontal_right_plan(struct Point_map_t* map_pst , stru
         {
             point_2d_st.x_c = dir_c > 0 ? x : GRID_X - x - 1; 
 
-            //block_st 处于 dir = 1 的 方向
+            //block_st 处于 dir = -1 的 方向
             if (block_st->x_c == GRID_X - 1 && block_st->y_c == point_2d_st.y_c && point_2d_st.x_c == GRID_X - 1)
             {
                 //由于这个到达这里的时候y 已经自增一次了，其实直接减掉就行
@@ -405,7 +413,7 @@ static void s_block_loc_horizontal_right_plan(struct Point_map_t* map_pst , stru
                     x = GRID_X; // 超出边界，直接结束本行扫描
                 
             }
-            else if (dir_c == 1 && point_2d_st.x_c == block_st->x_c + 1 && point_2d_st.y_c == block_st->y_c)
+            else if (dir_c == 1 && point_2d_st.x_c == block_st->x_c - 1 && point_2d_st.y_c == block_st->y_c)
             {
                 s_add_map_point(map_pst, &point_2d_st);
                 map_get_world_v(&point_2d_st, &point_3d_st);
@@ -441,6 +449,83 @@ static void s_block_loc_horizontal_right_plan(struct Point_map_t* map_pst , stru
 
 
 
+static void s_block_loc_vertical_center_plan(struct Point_map_t* map_pst ,struct Point_2D_t* block_st)
+{
+    struct Point_3D_t point_3d_st = {.z_s = 140};
+    struct Point_2D_t point_2d_st = {0};
+
+    int8_t dir_c = 1;
+
+    for (int x = 0; x < GRID_X; x++)
+    {
+    
+        point_2d_st.x_c = x;
+
+        for (int y = 0; y < GRID_Y;)
+        {
+            point_2d_st.y_c = dir_c > 0 ? y : GRID_Y -y - 1; 
+            
+            //使用的运动的那端的索引
+            if (point_2d_st.y_c == block_st->y_c - dir_c && point_2d_st.x_c == block_st->x_c)
+            {
+                
+                s_add_map_point(map_pst, &point_2d_st);
+                map_get_world_v(&point_2d_st, &point_3d_st);
+                s_point_3d_add_pass(g_patrol_point_3d_pst, &point_3d_st);
+                if ( block_st->x_c > 0)                                  //NB  point_2d_st.a_c = a; 这个真是十分巧妙
+                {
+                    point_2d_st.x_c = x - 1;
+                }
+                else if ( block_st->x_c == 0)
+                {
+                    point_2d_st.x_c = x + 1;
+                }
+                s_add_map_point(map_pst, &point_2d_st);
+                map_get_world_v(&point_2d_st, &point_3d_st);
+                s_point_3d_add_pass(g_patrol_point_3d_pst, &point_3d_st);
+                for (int i = 0; i < 4; i++)
+                {
+                    point_2d_st.y_c += dir_c;
+                       
+                }
+                s_add_map_point(map_pst, &point_2d_st);
+                map_get_world_v(&point_2d_st, &point_3d_st);
+                s_point_3d_add_pass(g_patrol_point_3d_pst, &point_3d_st);
+
+                point_2d_st.x_c = x;
+
+                // 1. 显式添加回归 Scan 点（不再依赖 else 意外补全）
+                s_add_map_point(map_pst, &point_2d_st);
+                map_get_world_v(&point_2d_st, &point_3d_st);
+                s_point_3d_add_scan(g_patrol_point_3d_pst, &point_3d_st);
+
+                // 2. 用物理坐标反算替代硬编码的 y += 4                             //由于y += 4 的时候 ，st.y = 1 巧合会在下一个else里面执行，导致重复了一下
+                int neyt_y_c = point_2d_st.y_c + dir_c;
+                if (neyt_y_c >= 0 && neyt_y_c < GRID_Y)
+                    y = (dir_c > 0) ? neyt_y_c : (GRID_Y - 1 - neyt_y_c);
+                else
+                    y = GRID_Y; // 超出边界，直接结束本行扫描
+            }
+            else
+            {
+                map_get_world_v(&point_2d_st, &point_3d_st);
+                s_point_3d_add_scan(g_patrol_point_3d_pst, &point_3d_st);
+                s_add_map_point(map_pst, &point_2d_st);
+                y++;
+            }
+        }
+        dir_c *= -1;
+    }
+}
+
+static void s_block_loc_vertical_up_plan(struct Point_map_t* map_pst , struct Point_2D_t * block_st)
+{
+
+}
+static void s_block_loc_vertical_down_plan(struct Point_map_t* map_pst , struct Point_2D_t * block_st)
+{
+
+}
 
 
 

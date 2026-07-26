@@ -15,8 +15,8 @@ enum block_loc_e{
     BLOCK_LOC_VERTICAL_em,                  //垂直          
     BLOCK_LOC_VERTICAL_UP_em,
     BLOCK_LOC_VERTICAL_DOWN_em,
-    BLOCK_LOC_VERTICAL_RIGHT_em,
-    BLOCK_LOC_VERTICAL_LEFT_em,
+    // BLOCK_LOC_VERTICAL_RIGHT_em,
+    // BLOCK_LOC_VERTICAL_LEFT_em,
 };
 
 void plan_path_v(void);
