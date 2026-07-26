@@ -101,7 +101,7 @@ static void uart_Ring_tx_complete_isr_IT(stUartBase *stBase)
 
 static void uart_Ring_tx_initQuene(stUartRing *me)
 {
-    me->xTxQuene_t = xQueueCreate(40,sizeof(tx_queue_item_t));
+    me->xTxQuene_t = xQueueCreate(64,sizeof(tx_queue_item_t));
     me->TxInProgress_vuc = 0;
 }
 
