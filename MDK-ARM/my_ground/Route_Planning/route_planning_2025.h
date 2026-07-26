@@ -5,7 +5,7 @@
 
 enum block_loc_e{
     BLOCK_LOC_NO_REGULAR_em,        //没有规则的BLOCK_LOC_NO
-    
+
     BLOCK_LOC_HORIZONTAL_em,        //水平
     BLOCK_LOC_HORIZONTAL_UP_em,
     BLOCK_LOC_HORIZONTAL_DOWN_em,
@@ -19,6 +19,7 @@ enum block_loc_e{
     BLOCK_LOC_VERTICAL_LEFT_em,
 };
 
+void plan_path_v(void);
 
 
 

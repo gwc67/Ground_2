@@ -15,20 +15,26 @@
 #include "Report/report.h"
 #include "update.h"
 #include "ano.h"
-
+#include "route_planning_2025.h"
+#include "map/point_2d.h"
 extern osThreadId_t UART_TouchHandle;
 extern osThreadId_t Ground_UARTHandle;
 
 void APPTask_LX(void *argument)
 {
   driver_init_all();
-#if POINT_DEBUG
-  struct Point_3D_t temp = {.x_s = 120,.y_s = 150,.z_s = 180,.yaw_s  = 180,.wp_action_uc = 1};
 
-  point_3d_add_b(g_patrol_point_3d_pst, &temp);
-  temp.yaw_s  = 120; 
-  temp.wp_action_uc = 0;
-  point_3d_add_b(g_patrol_point_3d_pst, &temp);
+#if POINT_DEBUG
+  plan_path_v();
+  // static struct Point_map_t map_st = {0};
+  // point_map_take_v(g_patrol_point_2d_pst, &map_st);
+
+  // struct Point_3D_t temp = {.x_s = 120,.y_s = 150,.z_s = 180,.yaw_s  = 180,.wp_action_uc = 1};
+
+  // point_3d_add_b(g_patrol_point_3d_pst, &temp);
+  // temp.yaw_s  = 120; 
+  // temp.wp_action_uc = 0;
+  // point_3d_add_b(g_patrol_point_3d_pst, &temp);
 #endif
   static uint32_t s_last_tick_pul[2] = {0};
 
@@ -43,15 +49,25 @@ void APPTask_LX(void *argument)
         mission_planner_tick();
     }
 
-    if (current_tick_ul - s_last_tick_pul[1] >= 1000)
+    if (current_tick_ul - s_last_tick_pul[1] >= 100)
     {
         s_last_tick_pul[1] = current_tick_ul;
-#if POINT_DEBUG
+
+
         
-        struct Point_3D_t point_3d_st = {0};
-        if(point_3d_take_uc(g_patrol_point_3d_pst,&point_3d_st) == 0)
+        #if POINT_DEBUG
+        
+        static bool s_test_b = false;
+      
+        
+        // struct Point_3D_t point_3d_st = {0};
+        // if(point_3d_take_uc(g_patrol_point_3d_pst,&point_3d_st) == 0)
+        // {
+
+        if (s_test_b == false)
         {
-          uart_printf_v(pstbase_screen_uart,0,"%d,%d,%d,%d\r\n",point_3d_st.x_s,point_3d_st.y_s,point_3d_st.z_s,point_3d_st.yaw_s);
+          s_test_b = true;
+          
         }
 #endif
         

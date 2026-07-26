@@ -9,7 +9,7 @@
 #define START_FLASK_QUICK 1 
 
 
-#define POINT_DEBUG     0
+#define POINT_DEBUG     1
 #endif
 
 

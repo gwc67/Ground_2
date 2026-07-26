@@ -3,6 +3,10 @@
 #include "Route_Planning/map/point_2d.h"
 #include "string.h"
 #include "point_3d.h"
+#include "Ano_Scheduler.h"
+#include "uarts.h"
+#include "stdio.h"
+#include "uart_log.h"
 //因为传入的禁飞区是通过网格索引来进行的
 //根据网格索引来制定航线的逻辑，这样可以减轻运算
 //其实有没有padding不重要，只要保证接受和发送端一模一样即可
@@ -168,6 +172,7 @@ static enum block_loc_e get_block_loc_em(uint8_t grid_puc[GRID_Y][GRID_X],struct
 
 static void s_block_loc_no_regular_plan(struct Point_map_t* map_pst);
 static void s_block_loc_horizontal_center_plan(struct Point_map_t* map_pst ,struct Point_2D_t* block_st);
+static void s_block_loc_horizontal_left_plan(struct Point_map_t* map_pst , struct Point_2D_t * block_st);
 
 void plan_path_v(void)
 {
@@ -181,13 +186,33 @@ void plan_path_v(void)
 
     enum block_loc_e block_loc_em = get_block_loc_em(grid_puc,&block_st);
 
+    block_loc_em = BLOCK_LOC_HORIZONTAL_LEFT_em;
+    block_st.x_c = 2;
+    block_st.y_c = 1;
     switch (block_loc_em)
     {
-    case BLOCK_LOC_NO_REGULAR_em: s_block_loc_no_regular_plan(&map_st);                         break;
-    case BLOCK_LOC_HORIZONTAL_em: s_block_loc_horizontal_center_plan(&map_st,&block_st);        break;
-    
+    case BLOCK_LOC_NO_REGULAR_em:           s_block_loc_no_regular_plan(&map_st);                         break;
+    case BLOCK_LOC_HORIZONTAL_em:           s_block_loc_horizontal_center_plan(&map_st,&block_st);        break;
+    case BLOCK_LOC_HORIZONTAL_LEFT_em :     s_block_loc_horizontal_left_plan(&map_st,&block_st);          break;
     default:
         break;
+    }
+
+    // char buf[30];
+
+    for (int i = 0; i < map_st.count_uc; i++)
+    {
+        
+        // uart_transmit(pstbase_screen_uart,(uint8_t*)buf,strlen(buf));
+        // sprintf(buf,"(%d,%d)\r\n",map_st.point_mat_pst[i].x_c, map_st.point_mat_pst[i].y_c);
+
+        uart_printf_v(pstbase_screen_uart, 0, "(%d,%d)\r\n", map_st.point_mat_pst[i].x_c, map_st.point_mat_pst[i].y_c);
+
+        if (i == 58)
+        {
+            uart_printf_v(pstbase_screen_uart, 0, "为什么不打印(%d,%d)\r\n", map_st.point_mat_pst[i].x_c, map_st.point_mat_pst[i].y_c);
+        }
+        
     }
 }
 
@@ -290,6 +315,86 @@ static void s_block_loc_horizontal_center_plan(struct Point_map_t* map_pst ,stru
 }
 
 
+static void s_block_loc_horizontal_left_plan(struct Point_map_t* map_pst , struct Point_2D_t * block_st)
+{
+    struct Point_3D_t point_3d_st = {.z_s = 140};
+    struct Point_2D_t point_2d_st = {0};
+
+    int8_t dir_c = 1;
+
+    for (int8_t y = 0; y < GRID_Y; y++)
+    {
+        point_2d_st.y_c = y;
+        for (int8_t x = 0; x < GRID_X;)
+        {
+            point_2d_st.x_c = dir_c > 0 ? x : GRID_X - x - 1; 
+
+            //block_st 处于 dir = 1 的 方向
+            if (block_st->x_c == 0 && block_st->y_c == point_2d_st.y_c && point_2d_st.x_c == 0)
+            {
+                //由于这个到达这里的时候y 已经自增一次了，其实直接减掉就行
+                point_2d_st.y_c = y - 1;
+
+                for (int i = 0; i < 3; i++)
+                {
+                    point_2d_st.x_c += dir_c;
+                }
+                s_add_map_point(map_pst, &point_2d_st);
+                map_get_world_v(&point_2d_st, &point_3d_st);
+                s_point_3d_add_pass(g_patrol_point_3d_pst, &point_3d_st);
+                
+                point_2d_st.y_c = y;
+
+                s_add_map_point(map_pst, &point_2d_st);
+                map_get_world_v(&point_2d_st, &point_3d_st);
+                s_point_3d_add_scan(g_patrol_point_3d_pst, &point_3d_st);    
+                int next_x_c = point_2d_st.x_c + dir_c;
+                if (next_x_c >= 0 && next_x_c < GRID_X)
+                    x = (dir_c > 0) ? next_x_c : (GRID_X - 1 - next_x_c);
+                else
+                    x = GRID_X; // 超出边界，直接结束本行扫描
+                
+            }
+            else if (dir_c == -1 && point_2d_st.x_c == block_st->x_c + 1 && point_2d_st.y_c == block_st->y_c)
+            {
+                s_add_map_point(map_pst, &point_2d_st);
+                map_get_world_v(&point_2d_st, &point_3d_st);
+                s_point_3d_add_pass(g_patrol_point_3d_pst, &point_3d_st);
+
+                point_2d_st.y_c += 1;
+                s_add_map_point(map_pst, &point_2d_st);
+                map_get_world_v(&point_2d_st, &point_3d_st);
+                s_point_3d_add_pass(g_patrol_point_3d_pst, &point_3d_st);
+
+                
+                for (int i = 0; i < 3; i++)
+                {
+                    point_2d_st.x_c += dir_c;
+                }
+                // s_add_map_point(map_pst, &point_2d_st);
+                // map_get_world_v(&point_2d_st, &point_3d_st);
+                // s_point_3d_add_scan(g_patrol_point_3d_pst, &point_3d_st);
+
+                int next_x_c = point_2d_st.x_c + dir_c;
+                if (next_x_c >= 0 && next_x_c < GRID_X)
+                    x = (dir_c > 0) ? next_x_c : (GRID_X - 1 - next_x_c);
+                else
+                    x = GRID_X; // 超出边界，直接结束本行扫描
+
+            }
+            else
+            {
+                s_add_map_point(map_pst, &point_2d_st);
+                map_get_world_v(&point_2d_st, &point_3d_st);
+                s_point_3d_add_scan(g_patrol_point_3d_pst, &point_3d_st);
+                x++;
+            }
+            
+        }
+        dir_c *= -1;
+    }
+    
+}
 
 
 
