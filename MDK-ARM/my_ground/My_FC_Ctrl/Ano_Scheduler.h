@@ -10,6 +10,10 @@
 
 
 #define POINT_DEBUG     1
+
+//是否使用串口3
+#define IS_USE_USART3   0
+
 #endif
 
 

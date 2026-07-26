@@ -25,7 +25,6 @@ void APPTask_LX(void *argument)
   driver_init_all();
 
 #if POINT_DEBUG
-  plan_path_v();
   // static struct Point_map_t map_st = {0};
   // point_map_take_v(g_patrol_point_2d_pst, &map_st);
 
@@ -49,7 +48,7 @@ void APPTask_LX(void *argument)
         mission_planner_tick();
     }
 
-    if (current_tick_ul - s_last_tick_pul[1] >= 100)
+    if (current_tick_ul - s_last_tick_pul[1] >= 2000)
     {
         s_last_tick_pul[1] = current_tick_ul;
 
@@ -57,18 +56,19 @@ void APPTask_LX(void *argument)
         
         #if POINT_DEBUG
         
-        static bool s_test_b = false;
+        // static bool s_test_b = false;
       
+        plan_path_v();
         
         // struct Point_3D_t point_3d_st = {0};
         // if(point_3d_take_uc(g_patrol_point_3d_pst,&point_3d_st) == 0)
         // {
 
-        if (s_test_b == false)
-        {
-          s_test_b = true;
+        // if (s_test_b == false)
+        // {
+        //   s_test_b = true;
           
-        }
+        // }
 #endif
         
             
