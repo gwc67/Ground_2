@@ -23,6 +23,7 @@ enum update_flag_field_e
     UPDATE_FLAG_DELVIERY_SPECIAL_em,
     UPDATE_FLAG_FINISH_SPECIAL_em,                                      //飞机完成巡查标志位
     UPDATE_FLAG_BEGIN_FLY_TASK_em,
+    UPDATE_FLAG_RADAR_POS_em,
 };
 
 enum update_state_e

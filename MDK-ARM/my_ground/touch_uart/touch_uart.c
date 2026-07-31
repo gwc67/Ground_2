@@ -62,65 +62,61 @@ int covx(int x,int y)
 //这个应该是轮询发送的才对
 void screen_send_delivery(void)
 {
-    static uint8_t s_has_sent_index = 0;
-    uint8_t delivery_index_uc = delivery_get_cur_index();
-    
-    if (s_has_sent_index != delivery_index_uc)
+    if (update_flag_consume_uc(UPDATE_FLAG_RADAR_POS_em))
     {
-                                   
-        struct delivery_t delivery_st = {0};
-        delivery_copy_by_index_b(s_has_sent_index,&delivery_st);
-        s_has_sent_index++;                         //只能加加，直到已经发送过的和现在的索引的一模一样
-
 #if TOUCH_UART_DEBUG
+        struct gs_radar_pos_t radar_pos_st = {0};
 
-        uart_printf_v(pstbase_screen_uart,0,"\r\npoistion:%d\r\n",delivery_st.position_uc);        //A1 ~ A6 B1 ~ B6 C1 ~ C6 D1 ~ D6
-        uart_printf_v(pstbase_screen_uart,0,"x:%d\r\n",delivery_st.x_s);
-        uart_printf_v(pstbase_screen_uart,0,"y:%d\r\n",delivery_st.y_s);
-        uart_printf_v(pstbase_screen_uart,0,"z:%d\r\n",delivery_st.z_s);
-        uart_printf_v(pstbase_screen_uart,0,"type:%d\r\n",delivery_st.type_uc);    
+        radar_pos_copy(&radar_pos_st);
+
+
+        uart_printf_v(pstbase_screen_uart,0,"clear\r\n");
+        uart_printf_v(pstbase_screen_uart,0,"x:%d\r\n",radar_pos_st.x_x100_s);
+        uart_printf_v(pstbase_screen_uart,0,"y:%d\r\n",radar_pos_st.y_x100_s);
+        // uart_printf_v(pstbase_screen_uart,0,"")
+
 #else
-        uart_printf_v(pstbase_screen_uart,0,"result.data0.insert(\"%d\")\xff\xff\xff",delivery_st.position_uc);        //A1 ~ A6 B1 ~ B6 C1 ~ C6 D1 ~ D6
-        uart_printf_v(pstbase_screen_uart,0,"result.data1.insert(\"%d\")\xff\xff\xff",delivery_st.x_s);
+        uart_printf_v(pstbase_screen_uart,0,"result.data0.insert(\"%d\")\xff\xff\xff",radar_pos_st.x_x100_s);        //A1 ~ A6 B1 ~ B6 C1 ~ C6 D1 ~ D6
+        uart_printf_v(pstbase_screen_uart,0,"result.data1.insert(\"%d\")\xff\xff\xff",radar_pos_st.y_x100_s);
         uart_printf_v(pstbase_screen_uart,0,"result.data2.insert(\"%d\")\xff\xff\xff",delivery_st.y_s);
         uart_printf_v(pstbase_screen_uart,0,"result.data3.insert(\"%d\")\xff\xff\xff",delivery_st.z_s);
         uart_printf_v(pstbase_screen_uart,0,"result.data4.insert(\"%d\")\xff\xff\xff",delivery_st.type_uc);                //1 ~ 24
 #endif
     }
     
-    if (update_flag_consume_uc(UPDATE_FLAG_DELVIERY_SPECIAL_em))            //类似刚刚手动切换成type_一样，这是只是使用无人机切换罢了
-    {
-        struct delivery_t delivery_st = {0};
-        static int8_t s_last_type_c = -1;
-        delivery_copy_special(&delivery_st);
+    static enum fly_task_phase_e last_fly_task_phase_em;
+    struct gs_batt_curr_height_process_t process_st = {0};
 
-        //简单去重逻辑，一般都不会进行非连续的去重
-        if (s_last_type_c != delivery_st.type_uc    )
+    if (last_fly_task_phase_em != process_st.process_uc)
+    {
+        last_fly_task_phase_em = process_st.process_uc;
+#if TOUCH_UART_DEBUG
+        switch (process_st.process_uc)
         {
-            s_last_type_c = delivery_st.type_uc;
-#if TOUCH_UART_DEBUG
-            uart_printf_v(pstbase_screen_uart, 0, "target_type_uc:%d\r\n", delivery_st.type_uc);
-#else
-            uart_printf_v(pstbase_screen_uart, 0, "result.data4.insert(\"%d\")\xff\xff\xff", delivery_st.type_uc); // 货物编号显示
-#endif
+        case FLY_PHASE_ALT_HOLD_em:
+            uart_printf_v(pstbase_screen_uart,0,"fly_to_sky\r\n");
+            break;
+        case FLY_PHASE_DESCEND_em:
+            uart_printf_v(pstbase_screen_uart,0,"decesend\r\n");
+            break;
+        case FLY_PHASE_CAMMER_CTRL_em:
+            uart_printf_v(pstbase_screen_uart,0,"company\r\n");
+            break;
+        case FLY_PHASE_PATROL_em:
+            uart_printf_v(pstbase_screen_uart,0,"company\r\n");
+            break;
+        case FLY_PHASE_RETURN_em:
+            uart_printf_v(pstbase_screen_uart,0,"servo_start\r\n");
+            break;
+        default:
+            break;
         }
-        
-    }
+#else
 
-    if (update_flag_consume_uc(UPDATE_FLAG_FINISH_SPECIAL_em))            //类似刚刚手动切换成type_一样，这是只是使用无人机切换罢了
-    {
-        struct delivery_t delivery_st = {0};
-        uint8_t type_uc =  delivery_get_special_type_uc();
 
-        delivery_find_by_type_b(type_uc,&delivery_st);
-
-#if TOUCH_UART_DEBUG
-        uart_printf_v(pstbase_screen_uart,0,"target_type_uc:%d\r\n",delivery_st.type_uc);
-        uart_printf_v(pstbase_screen_uart,0,"target_position_uc:%d\r\n",delivery_st.position_uc);
-#else   
-        uart_printf_v(pstbase_screen_uart,0,"result.data4.insert(\"%d\")\xff\xff\xff",delivery_st.type_uc);         //货物编号显示
 #endif
     }
+    
     
     
 }

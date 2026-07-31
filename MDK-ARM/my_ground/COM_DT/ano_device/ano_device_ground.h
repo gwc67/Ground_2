@@ -17,10 +17,7 @@ void vGround_DT_Data_Receive_Anl_Ano(uint8_t *pucdata, uint8_t uclen);
 void vGround_Add_Send_Data_Ano(uint8_t ucFrame_num, uint8_t *pcnt, uint8_t *pucTxBuffer);
 void vGround_TxBuffer_Ano(uint8_t *pucData, uint8_t ucLength);
 void vGround_Data_Exchange_Task_Ano(void);
-void Ground_Set_ALT_FU_v(int32_t ALT_FU_l );
-void Ground_Set_Voltage_v(uint16_t Voltage_100_us );
-void Ground_Set_Current_v(uint16_t Current_100_us );
-void ground_send_animal_report_v(const struct Animal_Report_Data_t *report_st);
+
 
 /* =====================================================================
  * 接收侧（地面站作为接收端，解析飞控发来的 9 个数据帧）
@@ -103,7 +100,20 @@ struct gs_vel_fu_t {
 } __attribute__((__packed__));
 
 
-
+enum fly_task_phase_e {
+    FLY_PHASE_IDLE_em = 0,
+    FLY_PHASE_TAKEOFF_DELAY_em, 
+    FLY_PHASE_ALT_HOLD_em,                  //起飞
+    FLY_PHASE_WAITING_PARTOL_em,            
+    FLY_PHASE_PATROL_em,        
+    // FLY_PHASE_PATROL_TO_CAM_em,          //
+    FLY_PHASE_CAMMER_CTRL_em,               //这个是伴飞？？抛投怎么实现 需要额外定义一个标志位吗？伴飞->下降一直显示抛投即可
+    FLY_PHASE_WATIING_RETURN_em,
+    FLY_PHASE_RETURN_em,        
+    FLY_PHASE_DESCEND_em,                   //降落
+    FLY_PHASE_LAND_em,          
+    FLY_PHASE_RESET_em,
+};
 
 
 /* copy — 线程安全快照（供其他模块读取） */

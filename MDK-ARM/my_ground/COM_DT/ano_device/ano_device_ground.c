@@ -189,6 +189,7 @@ void vGround_DT_Data_Receive_Anl_Ano(uint8_t *pucdata, uint8_t uclen)
     /* -------- 数据帧（飞控 → 地面站，被动接收不回 ACK） -------- */
     case RADAR_POS: {
         memcpy(&s_radar_pos, payload, sizeof(s_radar_pos));
+        update_flag_set_v(UPDATE_FLAG_RADAR_POS_em);
     }
     break;
     case RADAR_SPEED: {
