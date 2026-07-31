@@ -70,7 +70,7 @@ static struct gs_radar_pos_t                s_radar_pos;
 static struct gs_radar_speed_t              s_radar_speed;
 static struct gs_radar_yaw_t                s_radar_yaw;
 static struct gs_pwm_t                      s_pwm;
-static struct gs_batt_curr_height_process_t s_batt_curr_height_process;
+static struct batt_curr_height_process_t s_batt_curr_height_process;
 static struct gs_cmd_vel_t                  s_cmd_vel;
 static struct gs_vel_fu_t                   s_vel_fu;
 
@@ -96,7 +96,7 @@ void pwm_copy(struct gs_pwm_t *out)
     *out = s_pwm;
 }
 
-void batt_curr_height_process_copy(struct gs_batt_curr_height_process_t *out)
+void batt_curr_height_process_copy(struct batt_curr_height_process_t *out)
 {
     *out = s_batt_curr_height_process;
 }

@@ -74,7 +74,7 @@ struct gs_pwm_t {
     uint16_t pwm_m4;
 } __attribute__((__packed__));
 //电压、电流、高度、阶段
-struct gs_batt_curr_height_process_t {
+struct batt_curr_height_process_t {
     uint16_t voltage_100;
     uint16_t current_100;
     uint32_t alt_fu_ul;
@@ -121,7 +121,7 @@ void radar_pos_copy                (struct gs_radar_pos_t *out);
 void radar_speed_copy              (struct gs_radar_speed_t *out);
 void radar_yaw_copy                (struct gs_radar_yaw_t *out);
 void pwm_copy                      (struct gs_pwm_t *out);
-void batt_curr_height_process_copy (struct gs_batt_curr_height_process_t *out);
+void batt_curr_height_process_copy (struct batt_curr_height_process_t *out);
 void cmd_vel_copy                  (struct gs_cmd_vel_t *out);
 void vel_fu_copy                   (struct gs_vel_fu_t *out);
 

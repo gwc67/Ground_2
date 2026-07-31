@@ -60,7 +60,7 @@ static struct FlightPath s_return_compress_st;
 
 uint8_t mission_get_fc_phase(void)
 {
-    struct gs_batt_curr_height_process_t st;
+    struct batt_curr_height_process_t st;
     batt_curr_height_process_copy(&st);
     return st.process_uc;
 }

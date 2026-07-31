@@ -71,49 +71,66 @@ void screen_send_delivery(void)
 
 
         uart_printf_v(pstbase_screen_uart,0,"clear\r\n");
-        uart_printf_v(pstbase_screen_uart,0,"x:%d\r\n",radar_pos_st.x_x100_s);
-        uart_printf_v(pstbase_screen_uart,0,"y:%d\r\n",radar_pos_st.y_x100_s);
-        // uart_printf_v(pstbase_screen_uart,0,"")
+        uart_printf_v(pstbase_screen_uart,0,"x:%d\r\n",radar_pos_st.x_x100_s);          //无人机的位置
+        uart_printf_v(pstbase_screen_uart,0,"y:%d\r\n",radar_pos_st.y_x100_s);          //无人机的位置
+
+        
+        
 
 #else
         uart_printf_v(pstbase_screen_uart,0,"result.data0.insert(\"%d\")\xff\xff\xff",radar_pos_st.x_x100_s);        //A1 ~ A6 B1 ~ B6 C1 ~ C6 D1 ~ D6
         uart_printf_v(pstbase_screen_uart,0,"result.data1.insert(\"%d\")\xff\xff\xff",radar_pos_st.y_x100_s);
         uart_printf_v(pstbase_screen_uart,0,"result.data2.insert(\"%d\")\xff\xff\xff",delivery_st.y_s);
         uart_printf_v(pstbase_screen_uart,0,"result.data3.insert(\"%d\")\xff\xff\xff",delivery_st.z_s);
-        uart_printf_v(pstbase_screen_uart,0,"result.data4.insert(\"%d\")\xff\xff\xff",delivery_st.type_uc);                //1 ~ 24
 #endif
     }
     
     static enum fly_task_phase_e last_fly_task_phase_em;
-    struct gs_batt_curr_height_process_t process_st = {0};
+    struct batt_curr_height_process_t process_st = {0};
+
+    batt_curr_height_process_copy(&process_st);
+    
 
     if (last_fly_task_phase_em != process_st.process_uc)
     {
-        last_fly_task_phase_em = process_st.process_uc;
+        last_fly_task_phase_em = (enum fly_task_phase_e) process_st.process_uc;
 #if TOUCH_UART_DEBUG
         switch (process_st.process_uc)
         {
         case FLY_PHASE_ALT_HOLD_em:
-            uart_printf_v(pstbase_screen_uart,0,"fly_to_sky\r\n");
-            break;
-        case FLY_PHASE_DESCEND_em:
-            uart_printf_v(pstbase_screen_uart,0,"decesend\r\n");
-            break;
-        case FLY_PHASE_CAMMER_CTRL_em:
-            uart_printf_v(pstbase_screen_uart,0,"company\r\n");
+            uart_printf_v(pstbase_screen_uart, 0, "fly_to_sky\r\n"); // 起飞显示
             break;
         case FLY_PHASE_PATROL_em:
-            uart_printf_v(pstbase_screen_uart,0,"company\r\n");
+            uart_printf_v(pstbase_screen_uart, 0, "company\r\n"); // 伴飞
             break;
         case FLY_PHASE_RETURN_em:
-            uart_printf_v(pstbase_screen_uart,0,"servo_start\r\n");
+            uart_printf_v(pstbase_screen_uart, 0, "servo_start\r\n"); // 抛投
+            break;
+        case FLY_PHASE_DESCEND_em:
+            uart_printf_v(pstbase_screen_uart, 0, "decesend\r\n"); // 降落
             break;
         default:
             break;
         }
 #else
-
-
+        //汤哥换成自己串口屏幕那端的即可
+        switch (process_st.process_uc)
+        {
+        case FLY_PHASE_ALT_HOLD_em:
+            uart_printf_v(pstbase_screen_uart, 0, "fly_to_sky\r\n"); // 起飞显示
+            break;
+        case FLY_PHASE_PATROL_em:
+            uart_printf_v(pstbase_screen_uart, 0, "company\r\n"); // 伴飞
+            break;
+        case FLY_PHASE_RETURN_em:
+            uart_printf_v(pstbase_screen_uart, 0, "servo_start\r\n"); // 抛投
+            break;
+        case FLY_PHASE_DESCEND_em:
+            uart_printf_v(pstbase_screen_uart, 0, "decesend\r\n"); // 降落
+            break;
+        default:
+            break;
+        }
 #endif
     }
     

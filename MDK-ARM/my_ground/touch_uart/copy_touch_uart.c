@@ -7,7 +7,7 @@ gs_radar_speed_t->x_x100_s\y_x100_s\z_x100_s\freq_x10_s
 gs_jn_cam_t->cam_x_x100_s\cam_y_x100_s\state_uc\type_uc\id_s\freq_x10_s
 gs_radar_yaw_t->yaw_s\freq_x10_s偏航角信息
 gs_pwm_t->pwm_m1\pwm_m2\pwm_m3\pwm_m4
-gs_batt_curr_height_process_t->voltage_100\current_100\alt_fu_ul\process_uc
+batt_curr_height_process_t->voltage_100\current_100\alt_fu_ul\process_uc
 控制指令传输gs_cmd_vel_t->rol\pit\thr\yaw_dps\vel_x\vel_y\vel_z\freq_x10_s
 巡航速度配置gs_vel_fu_t->vel_x_s\vel_y_s\vel_z_s\freq_x10_s
 飞控传回动物数据gs_animal_report_t->row_uc\col_uc\count_per_type_auc[6]
