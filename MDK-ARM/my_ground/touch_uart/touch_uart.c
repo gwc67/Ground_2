@@ -64,24 +64,20 @@ void screen_send_delivery(void)
 {
     if (update_flag_consume_uc(UPDATE_FLAG_RADAR_POS_em))
     {
-#if TOUCH_UART_DEBUG
         struct gs_radar_pos_t radar_pos_st = {0};
 
         radar_pos_copy(&radar_pos_st);
+#if TOUCH_UART_DEBUG
 
 
         uart_printf_v(pstbase_screen_uart,0,"clear\r\n");
         uart_printf_v(pstbase_screen_uart,0,"x:%d\r\n",radar_pos_st.x_x100_s);          //无人机的位置
-        uart_printf_v(pstbase_screen_uart,0,"y:%d\r\n",radar_pos_st.y_x100_s);          //无人机的位置
-
-        
-        
+        uart_printf_v(pstbase_screen_uart,0,"y:%d\r\n",radar_pos_st.y_x100_s);          //无人机的位置        
 
 #else
         uart_printf_v(pstbase_screen_uart,0,"result.data0.insert(\"%d\")\xff\xff\xff",radar_pos_st.x_x100_s);        //A1 ~ A6 B1 ~ B6 C1 ~ C6 D1 ~ D6
         uart_printf_v(pstbase_screen_uart,0,"result.data1.insert(\"%d\")\xff\xff\xff",radar_pos_st.y_x100_s);
-        uart_printf_v(pstbase_screen_uart,0,"result.data2.insert(\"%d\")\xff\xff\xff",delivery_st.y_s);
-        uart_printf_v(pstbase_screen_uart,0,"result.data3.insert(\"%d\")\xff\xff\xff",delivery_st.z_s);
+
 #endif
     }
     

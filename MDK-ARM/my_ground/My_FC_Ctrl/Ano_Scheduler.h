@@ -4,7 +4,7 @@
 
 #include "main.h"
 #define COM_DEBUG  0
-#define TOUCH_UART_DEBUG 1
+#define TOUCH_UART_DEBUG 0
 
 #define START_FLASK_QUICK 1 
 
