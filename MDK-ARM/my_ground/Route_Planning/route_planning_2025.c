@@ -142,6 +142,7 @@ static int s_add_way_point(struct Point_map_t* map_pst,struct point_3d_base* bas
     {
         s_grid_puc[y_c][x_c] = CELL_VISITED_em;
     }
+    return 0;
 }
 // true = 找到  false = 全覆盖完成
 static bool find_remaining_free_b(int8_t* x_pc,int8_t* y_pc)
@@ -161,68 +162,98 @@ static bool find_remaining_free_b(int8_t* x_pc,int8_t* y_pc)
     return false;
 }
 
-/* 
- * @brief 通用单向扫描器（支持水平/垂直）
- * @param primary     主轴坐标（行号y 或 列号x）
- * @param dir         副轴扫描方向: 1=正向, -1=反向
- * @param horizontal  true=水平扫描(主轴=y), false=垂直扫描(主轴=x)
- */ 
+/**
+ * @brief 自适应蛇形扫描 — 在一条扫描线上遇到禁飞区时自动探测障碍范围，
+ *        并从相邻行/列绕行，支持任意位置/形状的禁飞区。
+ * @param horizontal_b true=水平扫描（逐行），false=垂直扫描（逐列）
+ * @param primary     扫描线索引：水平时=行号(y)，垂直时=列号(x)
+ * @param dir         扫描方向：1=正向，-1=反向
+ */
 static void s_scan_line(struct Point_map_t *map_pst, struct point_3d_base *base,
-                      uint8_t primary, int8_t dir, bool horizontal_b)
+                        uint8_t primary, int8_t dir, bool horizontal_b)
 {
-    int8_t cur_move_c = (dir > 0) ? 0 : (horizontal_b ? (GRID_X - 1) : (GRID_Y - 1));
-    uint8_t cur_move_max_c = horizontal_b ? GRID_X : GRID_Y;
+    int8_t cur = (dir > 0) ? 0 : (int8_t)((horizontal_b ? GRID_X : GRID_Y) - 1);
+    int8_t max_c = (int8_t)(horizontal_b ? GRID_X : GRID_Y);
+    int8_t last_free = -1;
 
-    enum probe_point_e probe_point_em = PROBE_POINT_IDLE_em   ;
-     
-    
-    while (cur_move_c >= 0 && cur_move_c < cur_move_max_c) {
-        int8_t grid_x_c = horizontal_b ? cur_move_c : primary;            
-        int8_t grid_y_c = horizontal_b ? primary : (uint8_t)cur_move_c;
+    while (cur >= 0 && cur < max_c) {
+        int8_t gx = horizontal_b ? cur : (int8_t)primary;
+        int8_t gy = horizontal_b ? (int8_t)primary : cur;
 
-        switch (probe_point_em)
-        {
-        case PROBE_POINT_IDLE_em: 
-        {
-            if (is_free(grid_x_c, grid_y_c))
-            {
-                add_waypoint(map_pst, base, grid_x_c, grid_y_c, WP_ACTION_SCAN_em);
-                cur_move_c += dir;
+        if (is_free_b(gx, gy)) {
+            /* 空闲格 → 正常扫描 */
+            s_add_way_point(map_pst, base, gx, gy, WP_ACTION_SCAN_em);
+            last_free = cur;
+            cur += dir;
+        } else {
+            /* 遇到禁飞区 */
+            if (last_free < 0) {
+                break;  /* 本线首个格子即被阻塞，跳过整线 */
             }
-            else
-            {
-                probe_point_em = PROBE_POINT_BEGIN_PROBE_em;
+
+            /* 向前探测，找到障碍后方第一个空闲格 */
+            int8_t probe = cur + dir;
+            while (probe >= 0 && probe < max_c) {
+                int8_t px = horizontal_b ? probe : (int8_t)primary;
+                int8_t py = horizontal_b ? (int8_t)primary : probe;
+                if (is_free_b(px, py)) break;
+                probe += dir;
             }
-            break;
-        }
-        case PROBE_POINT_BEGIN_PROBE_em:
-        {
-            //如果找到了应该进入什么状态？-》
-            
-            static uint8_t s_count_uc = 0;
-            int8_t probe_c = cur_move_c + dir;
-            s_count_uc++;
-            
-            bool found = false;
-            while (probe_c >= 0 && probe_c < cur_move_max_c)
-            {
-                uint8_t px = horizontal_b ? (uint8_t)probe_c : primary;
-                uint8_t py = horizontal_b ? primary : (uint8_t)probe_c;
-                    if (is_free(px, py))
-                    {
-                        add_waypoint(map_pst, base, px, py, WP_ACTION_PASS_em);
-                        cur_move_c = probe_c;
-                        found = true;
-                        break;
-                    }
-                    probe_c += dir;
-                }
-                if (!found)
-                    break; // 本线剩余全不可达
-        }
-        break;
-        default:
-            break;
+            if (probe < 0 || probe >= max_c) {
+                break;  /* 后方全被阻挡，本线结束 */
+            }
+
+            /* 确定绕行邻线：优先 primary-1，越界则 primary+1 */
+            int8_t adj_primary = (int8_t)primary;
+            uint8_t adj_max = horizontal_b ? GRID_Y : GRID_X;
+            if (primary > 0) {
+                adj_primary = (int8_t)(primary - 1);
+            } else if (primary + 1 < adj_max) {
+                adj_primary = (int8_t)(primary + 1);
+            } else {
+                break;  /* 无可用的相邻线 */
+            }
+
+            /* —— 构建绕行路径 —— */
+            struct Point_2D_t p2d;
+            struct Point_3D_t p3d = {.z_s = 140, .wp_action_uc = WP_ACTION_PASS_em};
+
+            /* 1) 在 last_free 位加 PASS（转向标记） */
+            p2d.x_c = horizontal_b ? last_free : (int8_t)primary;
+            p2d.y_c = horizontal_b ? (int8_t)primary : last_free;
+            map_get_world_v(&p2d, &p3d);
+            if (map_pst->count_uc < POINT_MAP_LENGTH)
+                map_pst->point_mat_pst[map_pst->count_uc++] = p2d;
+            point_3d_add_b(base, &p3d);
+
+            /* 2) 移到邻线（同扫描轴偏移） */
+            p2d.x_c = horizontal_b ? last_free : adj_primary;
+            p2d.y_c = horizontal_b ? adj_primary : last_free;
+            map_get_world_v(&p2d, &p3d);
+            if (map_pst->count_uc < POINT_MAP_LENGTH)
+                map_pst->point_mat_pst[map_pst->count_uc++] = p2d;
+            point_3d_add_b(base, &p3d);
+
+            /* 3) 在邻线上跨过障碍到 probe 位 */
+            p2d.x_c = horizontal_b ? probe : adj_primary;
+            p2d.y_c = horizontal_b ? adj_primary : probe;
+            map_get_world_v(&p2d, &p3d);
+            if (map_pst->count_uc < POINT_MAP_LENGTH)
+                map_pst->point_mat_pst[map_pst->count_uc++] = p2d;
+            point_3d_add_b(base, &p3d);
+
+            /* 4) 回到原线，恢复扫描 */
+            p2d.x_c = horizontal_b ? probe : (int8_t)primary;
+            p2d.y_c = horizontal_b ? (int8_t)primary : probe;
+            p3d.wp_action_uc = WP_ACTION_SCAN_em;
+            map_get_world_v(&p2d, &p3d);
+            if (map_pst->count_uc < POINT_MAP_LENGTH)
+                map_pst->point_mat_pst[map_pst->count_uc++] = p2d;
+            point_3d_add_b(base, &p3d);
+            s_grid_puc[p2d.y_c][p2d.x_c] = CELL_VISITED_em;
+
+            cur = probe + dir;
+            last_free = probe;
         }
     }
 }
@@ -231,21 +262,25 @@ static void s_scan_line(struct Point_map_t *map_pst, struct point_3d_base *base,
 
 void plan_path_new(void)
 {
-    struct Point_3D_t map_st = {0};
-    
+    struct Point_map_t map_st = {0};
+    struct point_3d_base *base = g_patrol_point_3d_pst;
+
     s_no_fly_zone_to_grid();
-    
+
     bool is_horizontal_b = s_choose_horizontal_b();
-
     uint8_t line_count = is_horizontal_b ? GRID_Y : GRID_X;
-
     int8_t dir_c = 1;
-    //循环自增的列
-    for (uint8_t i = 0; i < line_count; i++) {
-        scan_line(&map_st, g_patrol_point_3d_pst, i, dir_c, is_horizontal_b);
-        dir_c *= -1;
-    }        
 
+    for (uint8_t i = 0; i < line_count; i++) {
+        s_scan_line(&map_st, base, i, dir_c, is_horizontal_b);
+        dir_c *= -1;
+    }
+
+    /* 处理可能被障碍隔绝的孤立空闲格 */
+    int8_t rem_x, rem_y;
+    while (find_remaining_free_b(&rem_x, &rem_y)) {
+        s_add_way_point(&map_st, base, rem_x, rem_y, WP_ACTION_SCAN_em);
+    }
 }
 
 

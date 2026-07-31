@@ -9,9 +9,9 @@
 #define START_FLASK_QUICK 1 
 
 
-#define POINT_DEBUG     1
+#define POINT_DEBUG     0
 
-#define PLAN_TEST       1
+#define PLAN_TEST       0
 
 //是否使用串口3
 #define IS_USE_USART3   0

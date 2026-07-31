@@ -22,10 +22,19 @@ enum block_loc_e{
 enum probe_point_e{
     PROBE_POINT_IDLE_em,
     PROBE_POINT_BEGIN_PROBE_em,
-    PROBE_POINT_PROBE_em,
+    PROBE_POINT_WHICH_MOVE_em,
+    PROBE_POINT_CAN_MOVE_UP_em,             //都是相对参考系，不是绝对参考系
+    PROBE_POINT_CAN_MOVE_DOWN_em,
+    PROBE_POINT_CAN_MOVE_ON_em,
+    PROBE_POINT_CAN_MOVE_BACK_em,
+    PROBE_POINT_CAN_NOT_MOVE_UP_em,             //都是相对参考系，不是绝对参考系
+    PROBE_POINT_CAN_NOT_MOVE_DOWN_em,
+    PROBE_POINT_CAN_NOT_MOVE_ON_em,
+    PROBE_POINT_CAN_NOT_MOVE_BACK_em,
 };
 
 void plan_path_v(void);
+void plan_path_new(void);
 
 
 

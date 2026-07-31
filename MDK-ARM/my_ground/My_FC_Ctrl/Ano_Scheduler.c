@@ -25,15 +25,15 @@ void APPTask_LX(void *argument)
   driver_init_all();
 
 #if POINT_DEBUG
-  // static struct Point_map_t map_st = {0};
-  // point_map_take_v(g_patrol_point_2d_pst, &map_st);
+  static struct Point_map_t map_st = {0};
+  point_map_take_v(g_patrol_point_2d_pst, &map_st);
 
-  // struct Point_3D_t temp = {.x_s = 120,.y_s = 150,.z_s = 180,.yaw_s  = 180,.wp_action_uc = 1};
+  struct Point_3D_t temp = {.x_s = 120,.y_s = 150,.z_s = 180,.yaw_s  = 180,.wp_action_uc = 1};
 
-  // point_3d_add_b(g_patrol_point_3d_pst, &temp);
-  // temp.yaw_s  = 120; 
-  // temp.wp_action_uc = 0;
-  // point_3d_add_b(g_patrol_point_3d_pst, &temp);
+  point_3d_add_b(g_patrol_point_3d_pst, &temp);
+  temp.yaw_s  = 120; 
+  temp.wp_action_uc = 0;
+  point_3d_add_b(g_patrol_point_3d_pst, &temp);
 #endif
   static uint32_t s_last_tick_pul[2] = {0};
 
@@ -58,7 +58,7 @@ void APPTask_LX(void *argument)
         
         // static bool s_test_b = false;
       
-        plan_path_v();
+        plan_path_new();
         
         // struct Point_3D_t point_3d_st = {0};
         // if(point_3d_take_uc(g_patrol_point_3d_pst,&point_3d_st) == 0)

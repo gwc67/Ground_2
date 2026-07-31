@@ -91,12 +91,20 @@ void screen_send_delivery(void)
     if (update_flag_consume_uc(UPDATE_FLAG_DELVIERY_SPECIAL_em))            //类似刚刚手动切换成type_一样，这是只是使用无人机切换罢了
     {
         struct delivery_t delivery_st = {0};
+        static int8_t s_last_type_c = -1;
         delivery_copy_special(&delivery_st);
+
+        //简单去重逻辑，一般都不会进行非连续的去重
+        if (s_last_type_c != delivery_st.type_uc    )
+        {
+            s_last_type_c = delivery_st.type_uc;
 #if TOUCH_UART_DEBUG
-        uart_printf_v(pstbase_screen_uart,0,"target_type_uc:%d\r\n",delivery_st.type_uc);
-#else   
-        uart_printf_v(pstbase_screen_uart,0,"result.data4.insert(\"%d\")\xff\xff\xff",delivery_st.type_uc);         //货物编号显示
+            uart_printf_v(pstbase_screen_uart, 0, "target_type_uc:%d\r\n", delivery_st.type_uc);
+#else
+            uart_printf_v(pstbase_screen_uart, 0, "result.data4.insert(\"%d\")\xff\xff\xff", delivery_st.type_uc); // 货物编号显示
 #endif
+        }
+        
     }
 
     if (update_flag_consume_uc(UPDATE_FLAG_FINISH_SPECIAL_em))            //类似刚刚手动切换成type_一样，这是只是使用无人机切换罢了

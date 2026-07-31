@@ -33,13 +33,13 @@ static struct point_3d_base* s_point_fifo_base_init(struct point_fifo_t* fifo_ps
 static void s_point_3d_init_v(void)
 {
     vRingBufItemInit(&s_patrol_fifo_st.fifo_st,
-                     TARGET_QUEUE_CAPACITY * sizeof(struct Point_3D_t),
+                     TARGET_QUEUE_CAPACITY,
                      sizeof(struct Point_3D_t),
                      s_patrol_buf);
     g_patrol_point_3d_pst = s_point_fifo_base_init(&s_patrol_fifo_st,"patrol");
 
     vRingBufItemInit(&s_return_fifo_st.fifo_st,
-                     TARGET_QUEUE_CAPACITY * sizeof(struct Point_3D_t),
+                     TARGET_QUEUE_CAPACITY ,
                      sizeof(struct Point_3D_t),
                      s_return_buf);
     g_return_point_3d_pst = s_point_fifo_base_init(&s_return_fifo_st,"return");
