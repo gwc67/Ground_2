@@ -75,8 +75,12 @@ void screen_send_delivery(void)
         uart_printf_v(pstbase_screen_uart,0,"y:%d\r\n",radar_pos_st.y_x100_s);          //无人机的位置        
 
 #else
-        uart_printf_v(pstbase_screen_uart,0,"result.data0.insert(\"%d\")\xff\xff\xff",radar_pos_st.x_x100_s);        //A1 ~ A6 B1 ~ B6 C1 ~ C6 D1 ~ D6
-        uart_printf_v(pstbase_screen_uart,0,"result.data1.insert(\"%d\")\xff\xff\xff",radar_pos_st.y_x100_s);
+        uart_printf_v(pstbase_screen_uart,0,"x_plane=%d\xff\xff\xff",radar_pos_st.x_x100_s);
+        uart_printf_v(pstbase_screen_uart,0,"y_plane=%d\xff\xff\xff",radar_pos_st.y_x100_s);
+        uart_printf_v(pstbase_screen_uart,0,"click plane_jishuan,1\xff\xff\xff",radar_pos_st.z_x100_s);
+        uart_printf_v(pstbase_screen_uart,0,"X_c.txt=\"%d\"\xff\xff\xff",radar_pos_st.x_x100_s);
+        uart_printf_v(pstbase_screen_uart,0,"Y_c.txt=\"%d\"\xff\xff\xff",radar_pos_st.y_x100_s);
+
 
 #endif
     }
@@ -110,19 +114,25 @@ void screen_send_delivery(void)
         }
 #else
         //汤哥换成自己串口屏幕那端的即可
-        switch (process_st.process_uc)
+         switch (process_st.process_uc)
         {
+        case FLY_PHASE_ALT_HOLD_2_em:
         case FLY_PHASE_ALT_HOLD_em:
-            uart_printf_v(pstbase_screen_uart, 0, "fly_to_sky\r\n"); // 起飞显示
+            uart_printf_v(pstbase_screen_uart, 0, "level_c=4\xff\xff\xff"); // 起飞显示
+            uart_printf_v(pstbase_screen_uart, 0, "click level,1\xff\xff\xff");
             break;
         case FLY_PHASE_PATROL_em:
-            uart_printf_v(pstbase_screen_uart, 0, "company\r\n"); // 伴飞
+            uart_printf_v(pstbase_screen_uart, 0, "level_c=1\xff\xff\xff"); // 伴飞
+            uart_printf_v(pstbase_screen_uart, 0, "click level,1\xff\xff\xff");
             break;
         case FLY_PHASE_RETURN_em:
-            uart_printf_v(pstbase_screen_uart, 0, "servo_start\r\n"); // 抛投
+            uart_printf_v(pstbase_screen_uart, 0, "level_c=2\xff\xff\xff"); // 抛投
+            uart_printf_v(pstbase_screen_uart, 0, "click level,1\xff\xff\xff");
             break;
+        case FLY_PHASE_TEMP_DESCEND_em:
         case FLY_PHASE_DESCEND_em:
-            uart_printf_v(pstbase_screen_uart, 0, "decesend\r\n"); // 降落
+            uart_printf_v(pstbase_screen_uart, 0, "level_c=3\xff\xff\xff"); // 降落
+            uart_printf_v(pstbase_screen_uart, 0, "click level,1\xff\xff\xff");
             break;
         default:
             break;

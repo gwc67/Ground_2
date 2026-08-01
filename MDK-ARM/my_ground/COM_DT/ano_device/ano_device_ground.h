@@ -106,13 +106,15 @@ enum fly_task_phase_e {
     FLY_PHASE_ALT_HOLD_em,                  //起飞
     FLY_PHASE_WAITING_PARTOL_em,            
     FLY_PHASE_PATROL_em,        
-    // FLY_PHASE_PATROL_TO_CAM_em,          //
-    FLY_PHASE_CAMMER_CTRL_em,               //这个是伴飞？？抛投怎么实现 需要额外定义一个标志位吗？伴飞->下降一直显示抛投即可
+    // FLY_PHASE_PATROL_TO_CAM_em,
+    FLY_PHASE_CAMMER_CTRL_em,               //这个是伴飞？？抛投怎么实现 需要额外定义一个标志位
     FLY_PHASE_WATIING_RETURN_em,
     FLY_PHASE_RETURN_em,        
     FLY_PHASE_DESCEND_em,                   //降落
     FLY_PHASE_LAND_em,          
     FLY_PHASE_RESET_em,
+    FLY_PHASE_TEMP_DESCEND_em,
+    FLY_PHASE_ALT_HOLD_2_em,        
 };
 
 
