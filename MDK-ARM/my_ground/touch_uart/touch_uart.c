@@ -125,8 +125,12 @@ void screen_send_delivery(void)
             uart_printf_v(pstbase_screen_uart, 0, "level_c=1\xff\xff\xff"); // 伴飞
             uart_printf_v(pstbase_screen_uart, 0, "click level,1\xff\xff\xff");
             break;
-        case FLY_PHASE_RETURN_em:
+        case FLY_PHASE_CAMMER_CTRL_em:
             uart_printf_v(pstbase_screen_uart, 0, "level_c=2\xff\xff\xff"); // 抛投
+            uart_printf_v(pstbase_screen_uart, 0, "click level,1\xff\xff\xff");
+            break;
+        case FLY_PHASE_RETURN_em:
+            uart_printf_v(pstbase_screen_uart, 0, "level_c=2\xff\xff\xff"); // 返航
             uart_printf_v(pstbase_screen_uart, 0, "click level,1\xff\xff\xff");
             break;
         case FLY_PHASE_TEMP_DESCEND_em:
